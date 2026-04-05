@@ -1,0 +1,15 @@
+============================================================
+ PANEL DE ADMINISTRACIÓN                      [USER: LOCAL]
+============================================================
+ 
+ Estado del Servidor: EN LÍNEA (Puerto 8080)
+
+ COMANDOS DISPONIBLES:
+   > CATALOGO    : Gestión de productos.
+   > BUSCAR      : Búsqueda avanzada y filtros.
+   > ALMACENES   : Gestión logística y stock distribuido.
+   > INFORME     : Business Intelligence y Balances.
+   > EXIT        : Cerrar consola de administración.
+
+------------------------------------------------------------
+> _

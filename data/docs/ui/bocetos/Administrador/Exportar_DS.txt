@@ -1,0 +1,4 @@
+============================================================
+ FICHERO GENERADO: /reports/dead_stock_120d_fechaHoy.csv
+============================================================
+ Pulsa ENTER para continuar...

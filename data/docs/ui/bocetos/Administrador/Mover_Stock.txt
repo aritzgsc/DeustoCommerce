@@ -1,0 +1,27 @@
+[ TRASVASE DE MERCANCÍA ]
+------------------------------------------------------------
+ 
+ ORIGEN: ALMACÉN 02 (Bilbao)
+
+ ID(s) Producto a mover:
+ > 001 002
+
+ Cantidades:
+ > 5 20
+
+ ID Almacén Destino:
+ > 03
+
+ [CALCULANDO LOGÍSTICA]
+ Distancia: 600km | Coste Estimado: 150.00 €
+ Tiempo estimado: 6 horas.
+
+------------------------------------------------------------
+
+ ¿CONFIRMAR TRASVASE? (SI/NO)
+ > SI
+
+------------------------------------------------------------
+ [OK] Orden de transporte generada. Stock actualizado.
+------------------------------------------------------------
+ Pulse ENTER para volver al almacén...

@@ -1,0 +1,12 @@
+[ PROCESO DE PAGO - ENVÍO ]
+-----------------------------------------------------------------
+ TOTAL: 100.00 €
+
+ ¿DÓNDE QUIERES RECIBIR TU PEDIDO?
+
+   > DIR_GUARDADA : Enviar a una dirección previamente utilizada.
+   > DIR_NUEVA    : Introducir una nueva dirección.
+   > CANCELAR     : Volver al carrito.
+
+-----------------------------------------------------------------
+> _

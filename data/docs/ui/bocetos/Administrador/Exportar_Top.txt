@@ -1,0 +1,4 @@
+============================================================
+ FICHERO GENERADO: /reports/top_X_ventas_fechaHoy.csv
+============================================================
+ Pulsa ENTER para continuar...

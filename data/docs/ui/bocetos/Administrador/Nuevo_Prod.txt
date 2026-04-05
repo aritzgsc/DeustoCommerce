@@ -1,0 +1,11 @@
+ Introduzca datos del producto a crear:
+------------------------------------------------------------
+ NOMBRE               > P1
+ PRECIO               > 50
+ TALLAS (ENTER => NO) > XS S M 
+ ALMACENES (ID(s))    > 1 3 4
+
+------------------------------------------------------------
+[OK] Producto registrado y dado de alta en los almacenes
+------------------------------------------------------------
+ Pulse ENTER para volver...

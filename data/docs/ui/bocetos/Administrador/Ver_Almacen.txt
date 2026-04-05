@@ -1,0 +1,22 @@
+[ GESTIÓN: ALMACÉN 02 (BILBAO) ]
+========================================================================
+ STOCK ACTUAL: 200 u.   |   CAPACIDAD: 1000 u.
+========================================================================
+    ID  | PRODUCTO               | CANTIDAD | ESTADO
+   -----|------------------------|----------|----------
+    001 | Zapatillas Nike Air    |   10     | [CRITICO]
+    002 | Camiseta Adidas        |   50     | [NORMAL]
+    ...
+------------------------------------------------------------------------
+
+ OPERACIONES LOGÍSTICAS:
+   > VER_PROD [ID] : Entrar en detalle para Editar/Borrar. (ESTE ALM)
+   > ADD_STOCK     : Entrada manual de mercancía.
+   > MOVER_STOCK   : Trasvase a otro almacén.
+   > RESTOCK       : Intento de restock adelantado (Llenar hasta el 80%)
+   > ELIMINAR      : Cerrar almacén (Reubicación de stock automática).
+   
+   > VOLVER        : Ir a la red de almacenes.
+
+------------------------------------------------------------------------
+> _

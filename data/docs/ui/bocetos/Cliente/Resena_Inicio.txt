@@ -1,0 +1,12 @@
+[ GESTIÓN DE RESEÑAS: Zapatillas Nike Air ]
+------------------------------------------------------------
+ VALORACIÓN MEDIA: [**** ] (4.2/5) - Basada en 15 opiniones
+------------------------------------------------------------
+
+ COMANDOS:
+   > LEER        : Ver opiniones de otros usuarios.
+   > ESCRIBIR    : Publicar tu propia reseña.
+   > VOLVER      : Regresar al producto.
+
+------------------------------------------------------------
+> _

@@ -1,0 +1,14 @@
+[ VISTA DE CATÁLOGO ]		       FILTROS ACTIVOS: [FAVORITOS]
+===================================================================
+ ID  | NOMBRE PRODUCTO        | PRECIO   | DTO | STOCK
+-----|------------------------|----------|-----|-------------------
+ 001 | Zapatillas Nike Air    |  50.00 € | 10% | 150 u.
+ 003 | Vaqueros Levi's        |  80.00 € | 25% | 200 u.
+===================================================================
+
+ COMANDOS:
+   > VER_PROD [ID] : Entrar en detalle para Editar/Borrar.
+   > HOME          : Volver al panel principal.
+
+-------------------------------------------------------------------
+> _

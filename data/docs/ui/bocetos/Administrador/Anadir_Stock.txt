@@ -1,0 +1,22 @@
+[ ENTRADA DE MERCANCÍA - ALMACÉN 02 ]
+------------------------------------------------------------
+
+ ID(s) de Producto(s):
+ > 001
+
+ Cantidad(es) a añadir:
+ > 50
+
+ [RESUMEN OPERACIÓN]
+ ---------------------------------------------------------
+ ID   PRODUCTO             REQ.    COSTE/U     SUBTOTAL
+ 001  Zapatillas Nike Air  +50     25.00 €     1,250.00 €
+ ---------------------------------------------------------
+ TOTAL ORDEN DE COMPRA:                        2,500.00 €
+ TIEMPO ESTIMADO ENTREGA:                      12 Horas
+ ---------------------------------------------------------
+
+------------------------------------------------------------
+[OK] Stock actualizado correctamente
+------------------------------------------------------------
+ Pulse ENTER para volver al almacén...

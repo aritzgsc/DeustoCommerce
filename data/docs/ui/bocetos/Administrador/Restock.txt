@@ -1,0 +1,19 @@
+[ RESTOCK - ALMACÉN 02 ]
+------------------------------------------------------------
+ 
+ [INFO] Detectados 2 productos por debajo del umbral.
+
+ [RESUMEN OPERACIÓN]
+ ---------------------------------------------------------
+ ID   PRODUCTO             REQ.    COSTE/U     SUBTOTAL
+ 001  Zapatillas Nike Air  +90     25.00 €     2,250.00 €
+ 003  Gorra New Era        +50      5.00 €       250.00 €
+ ---------------------------------------------------------
+ TOTAL ORDEN DE COMPRA:                        2,500.00 €
+ TIEMPO ESTIMADO ENTREGA:                      24 Horas
+ ---------------------------------------------------------
+
+------------------------------------------------------------
+[OK] Orden de transporte generada. Stock actualizado.
+------------------------------------------------------------
+ Pulse ENTER para volver al almacén...

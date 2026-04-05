@@ -1,0 +1,15 @@
+===============================================================
+                D E U S T O   C O M M E R C E
+===============================================================
+ 
+Estado: Desconectado
+
+ COMANDOS DISPONIBLES:
+   > LOGIN       : Iniciar sesión con tu cuenta.
+   > REGISTRO    : Crear una nueva cuenta de usuario.
+   > CATALOGO    : Ver productos (Modo Invitado).
+   > BUSCAR      : Búsqueda avanzada y filtros (Modo Invitado).
+   > EXIT        : Cerrar aplicación.
+
+---------------------------------------------------------------
+> _

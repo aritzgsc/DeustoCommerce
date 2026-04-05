@@ -1,0 +1,12 @@
+[ BUSINESS INTELLIGENCE ]
+------------------------------------------------------------
+ 
+ Seleccione algoritmo de reporte:
+
+   > BALANCE      : Informe Financiero (Ingresos vs Gastos).
+   > DEAD_STOCK   : Detección de productos estancados.
+   > TOP_VENTAS   : Ranking histórico de ventas.
+   > HOME         : Volver al dashboard.
+
+------------------------------------------------------------
+> _

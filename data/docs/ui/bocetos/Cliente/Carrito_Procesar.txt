@@ -1,0 +1,9 @@
+[ PROCESANDO PAGO ]
+-------------------------------------------------------------
+ [OK] Transacción aceptada por el banco.
+ [OK] Stock actualizado en almacén.
+ [OK] Email de confirmación enviado a usuario@email.com.
+
+ PEDIDO #5021 GENERADO CON ÉXITO. SU PEDIDO LLEGARÁ EN 2 DÍAS
+-------------------------------------------------------------
+ Pulse ENTER para volver al inicio...

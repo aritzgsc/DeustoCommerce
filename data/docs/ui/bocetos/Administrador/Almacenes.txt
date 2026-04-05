@@ -1,0 +1,17 @@
+[ RED LOGÍSTICA - ESTADO GLOBAL ]
+============================================================
+ ID | UBICACIÓN      | OCUPACIÓN    | ESTADO   | ALERTAS
+----|----------------|--------------|----------|--------
+ 01 | Madrid Centro  |  850 / 1000  | [85%]    | -
+ 02 | Bilbao Norte   |  200 / 1000  | [20%]    | ! RESTOCK
+ 03 | Barcelona Sur  |  980 / 1000  | [98%]    | ! MOVER
+ ...
+============================================================
+ 
+ COMANDOS:
+   > VER_ALMACEN [ID] : Gestionar stock de un almacén.
+   > NUEVO_ALMACEN    : Inaugurar nueva sede.
+   > HOME             : Volver al inicio.
+
+------------------------------------------------------------
+> _

@@ -1,0 +1,10 @@
+ Comparte tu experiencia con este producto:
+------------------------------------------------------------------
+ 
+ PUNTUACIÓN (1-5)     > 5
+ COMENTARIO           > La calidad es excelente y llegaron rápido.
+
+------------------------------------------------------------------
+ [OK] Reseña publicada correctamente. Gracias por tu opinión.
+------------------------------------------------------------------
+ Pulse ENTER para volver...

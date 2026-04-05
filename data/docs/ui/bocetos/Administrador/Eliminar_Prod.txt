@@ -1,0 +1,19 @@
+[ ELIMINAR PRODUCTO: 001 ]
+====================================================================================================================
+ NOMBRE:      Zapatillas Nike Air
+ PRECIO:      50.00 €
+ DESCUENTO:   10%
+ TALLAS:      40, 42, 43
+ STOCK:       150 u.
+ DESCRIPCIÓN: Zapatillas de running con amortiguación.
+
+ VALORACIÓN:  [**** ] (4.2/5)
+====================================================================================================================
+
+ ¿CONFIRMAR ELIMINACIÓN TOTAL/PARCIAL DEL PRODUCTO? (Se perderá todo el producto (del almacén seleccionado)) (SI/NO)
+ > SI
+
+--------------------------------------------------------------------------------------------------------------------
+ [OK] Se ha eliminado el producto totalmente / parcialmente
+--------------------------------------------------------------------------------------------------------------------
+ Pulse ENTER para volver a la búsqueda...

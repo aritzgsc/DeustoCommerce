@@ -1,0 +1,15 @@
+ Introduzca credenciales:
+------------------------------------------------------------
+ NOMBRE     > Usuario
+ APELLIDO   > User
+ CORREO     > usuario@email.com
+ CONTRASEÑA > **********
+
+[INFO] Código 2FA enviado a su correo.
+
+ CODIGO 2FA > 592011 (del correo)
+------------------------------------------------------------
+ [OK] Usuario Usuario ha sido registrado correctamente.
+ [OK] Bienvenido, Usuario. Sesión iniciada.
+------------------------------------------------------------
+ Pulse ENTER para volver al inicio...

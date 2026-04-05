@@ -1,0 +1,25 @@
+[ CONFIGURACIÓN DE BALANCE ]
+------------------------------------------------------------
+ 
+ Para generar el Excel, defina el periodo de análisis.
+
+ Fecha Inicio (DD-MM-AAAA):
+ > 01-01-2024
+
+ Fecha Fin (DD-MM-AAAA):
+ > 31-01-2024
+
+ Agrupación (DIARIO / SEMANAL / MENSUAL):
+ > SEMANAL
+
+ [RESULTADO]
+============================================================
+ FICHERO GENERADO: /reports/balance_ene24_semanal.xlsx
+============================================================
+   
+   * Pestaña 1: Datos Agrupados
+   * Gráfico 1: Evolución Beneficio Neto
+   * Gráfico 2: Distribución de Gastos
+
+------------------------------------------------------------
+ Pulsa ENTER para continuar...

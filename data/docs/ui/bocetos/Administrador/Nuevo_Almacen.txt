@@ -1,0 +1,12 @@
+ Introduzca datos del nuevo almacén:
+------------------------------------------------------------
+ NOMBRE         > Valencia Puerto
+ PAÍS           > España
+ CIUDAD         > Valencia
+ DIRECCIÓN      > C/ Colón
+ CAPACIDAD MÁX. > 5000
+
+------------------------------------------------------------
+[OK] Almacén registrado e integrado en la red logística
+------------------------------------------------------------
+ Pulse ENTER para volver...

@@ -1,0 +1,17 @@
+============================================================
+              D E U S T O   C O M M E R C E
+============================================================
+
+USUARIO: …                                      [CARRITO: 0]
+
+ COMANDOS DISPONIBLES:
+   > CATALOGO    : Explorar productos.
+   > BUSCAR      : Búsqueda avanzada y filtros.
+   > CARRITO     : Ver cesta y finalizar compra.
+   > FAVORITOS   : Ver lista de productos favoritos.
+   > PEDIDOS     : Historial de compras.
+   > LOGOUT      : Cerrar sesión.
+   > EXIT        : Cerrar aplicación.
+
+------------------------------------------------------------
+> _

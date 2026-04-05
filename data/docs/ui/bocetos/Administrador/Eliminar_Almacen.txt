@@ -1,0 +1,17 @@
+[ ALERTA DE SEGURIDAD: CIERRE DE ALMACÉN ]
+============================================================
+ ESTÁ A PUNTO DE ELIMINAR EL ALMACÉN 02 (BILBAO).
+ ESTA ACCIÓN ES IRREVERSIBLE.
+
+ LOGÍSTICA DE CIERRE:
+   * Stock remanente (200 u.) -> Se moverá al Almacén 01.
+   * Tendrá un coste de transporte de 120€
+============================================================
+
+ ¿ESTÁ SEGURO DE QUE QUIERE ELIMINAR EL ALMACÉN? (SI/NO)
+ > SI
+
+------------------------------------------------------------
+[OK] Almacén eliminado correctamente. Stock en movimiento.
+------------------------------------------------------------
+ Pulsa ENTER para volver al listado de almacenes...

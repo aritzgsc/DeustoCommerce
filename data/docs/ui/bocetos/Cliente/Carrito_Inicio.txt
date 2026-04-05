@@ -1,0 +1,17 @@
+[ MI CARRITO DE COMPRA ]
+============================================================
+ ITEM                       CANT.   PRECIO/U    SUBTOTAL
+------------------------------------------------------------
+ Zapatillas Nike Air (42)     1      50.00 €    50.00 €
+ Camiseta Adidas (M)          2      25.00 €    50.00 €
+------------------------------------------------------------
+ TOTAL A PAGAR:                                100.00 €
+============================================================
+
+ COMANDOS DISPONIBLES:
+   > PAGAR       : Iniciar proceso de checkout.
+   > VACIAR      : Eliminar todos los productos.
+   > VOLVER      : Volver al inicio.
+
+------------------------------------------------------------
+> _

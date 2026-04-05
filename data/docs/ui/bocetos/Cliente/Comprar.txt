@@ -1,0 +1,10 @@
+ Añadir producto a la cesta:
+------------------------------------------------------------
+ 
+ CANTIDAD             > 2
+ TALLA / MODELO       > 42
+
+------------------------------------------------------------
+ [OK] 2 unidades añadidas al carrito correctamente.
+------------------------------------------------------------
+ Pulse ENTER para seguir comprando...

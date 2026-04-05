@@ -1,0 +1,25 @@
+[ ANÁLISIS DE STOCK INMOVILIZADO ]
+------------------------------------------------------------
+ Este algoritmo busca productos sin salidas de almacén
+ en un periodo determinado.
+
+ Umbral de días sin ventas:
+ > 120
+
+[ REPORT: DEAD STOCK (>120 DÍAS) ]
+============================================================
+ ID   PRODUCTO             ALMACÉN      CANT.   VALOR EST.
+----- -------------------- ------------ ------- ------------
+ 045  Botas Nieve Xtreme   03 (Bcn)     150 u.  12,000.00 €
+ 088  Bañador Verano 2022  01 (Mad)      40 u.     800.00 €
+============================================================
+
+ [SUGERENCIA DEL SISTEMA]
+ Se recomienda aplicar descuentos o mover stock.
+
+ COMANDOS:
+   > EXPORTAR     : Guardar lista en .csv
+   > VOLVER       : Salir al menú BI.
+
+------------------------------------------------------------
+> _

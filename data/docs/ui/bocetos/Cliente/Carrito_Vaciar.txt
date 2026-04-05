@@ -1,0 +1,7 @@
+[OK] Carrito vaciado correctamente.
+
+[ MI CARRITO DE COMPRA ]
+============================================================
+ CARRITO VACÍO
+============================================================
+Pulse ENTER para volver al inicio...

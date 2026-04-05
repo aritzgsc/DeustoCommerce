@@ -1,0 +1,16 @@
+[ NUEVA DIRECCIÓN DE ENVÍO ]
+------------------------------------------------------------
+ 
+Introduce los datos de envío:
+
+   > PAÍS       : España
+   > CIUDAD     : Bilbao
+   > DIRECCIÓN  : Av. Universidades 24
+
+------------------------------------------------------------
+ [SISTEMA] Verificando dirección...
+ [OK] Dirección validada.
+------------------------------------------------------------
+
+ ¿CONFIRMAR PAGO Y ENVÍO? (SI/NO)
+> _

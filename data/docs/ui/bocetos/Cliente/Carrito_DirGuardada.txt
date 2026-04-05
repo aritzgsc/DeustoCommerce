@@ -1,0 +1,15 @@
+[ DIRECCIONES GUARDADAS ]
+------------------------------------------------------------
+ 
+ Selecciona una dirección de envío:
+
+   [1] C/ Gran Vía 12, 2ºA (Madrid)
+   [2] Av. Universidades 24 (Bilbao)
+
+ Introduce el número de la dirección:
+ > 1
+
+------------------------------------------------------------
+
+ ¿CONFIRMAR PAGO Y ENVÍO? (SI/NO)
+> _

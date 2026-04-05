@@ -1,0 +1,50 @@
+[ BUSCADOR AVANZADO ]
+---------------------------------------------------------------
+ FILTROS ACTIVOS: [NINGUNO]
+---------------------------------------------------------------
+ 
+ COMANDOS DISPONIBLES:
+   > F_NOMBRE     : Añadir/Editar filtro por Nombre.
+   > F_CATEGORIA  : Añadir/Editar filtro por Categoría.
+   > F_ETIQUETA   : Añadir/Editar filtro por Etiqueta(s).
+   > BORRAR       : Limpiar filtros.
+   > BUSCAR_YA    : Ejecutar búsqueda.
+
+   > HOME         : Volver al inicio.
+
+---------------------------------------------------------------
+> F_CATEGORIA
+
+ [ SELECCIONA CATEGORÍA ]
+   [1] Ropa Deportiva
+   [2] Calzado
+   [3] Accesorios
+   [4] Electrónica
+
+ Introduce el número de la categoría:
+ > 2
+---------------------------------------------------------------
+ FILTROS ACTIVOS: 
+   # Categoría: [Calzado]
+---------------------------------------------------------------
+ ... (Esperando siguiente comando)
+
+> F_ETIQUETA
+
+ [ SELECCIONA ETIQUETAS ]
+   [1] Oferta Flash
+   [2] Novedad
+   [3] Outlet
+   [4] Edición Limitada
+   [5] Tallas Grandes
+
+ Introduce los números separados por espacio (Ej: 1 2):
+ > 1 4
+---------------------------------------------------------------
+ FILTROS ACTIVOS: 
+   # Categoría: [Calzado]
+   # Etiquetas: [Oferta Flash] [Edición Limitada]
+---------------------------------------------------------------
+ ... (Esperando siguiente comando)
+
+> _
