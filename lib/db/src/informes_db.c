@@ -66,32 +66,27 @@ ProductoDeadStock* getDeadStock(sqlite3* db, int idAlm, int* n) {
 
     // Productos con stock en almacén pero que no aparecen en ningún pedido
     char sql[1024];
-    if (idAlm == -1) {
 
-        snprintf(sql, sizeof(sql),
+    const char* base_query =
             "SELECT SA.ID_PR, P.NOM_PR, C.NOM_CAT, "
             "       SA.ID_ALM, A.NOM_ALM, SA.VARIANTE, SA.CANT "
             "FROM STOCK_ALMACEN SA "
-            "JOIN PRODUCTO P   ON SA.ID_PR  = P.ID_PR "
-            "JOIN CATEGORIA C  ON P.ID_CAT  = C.ID_CAT "
-            "JOIN ALMACEN A    ON SA.ID_ALM  = A.ID_ALM "
+            "JOIN PRODUCTO P        ON SA.ID_PR  = P.ID_PR "
+            "LEFT JOIN CATEGORIA C  ON P.ID_CAT  = C.ID_CAT "
+            "JOIN ALMACEN A         ON SA.ID_ALM = A.ID_ALM "
             "WHERE SA.CANT > 0 "
-            "AND SA.ID_PR NOT IN (SELECT DISTINCT ID_PR FROM PRODUCTOS_PEDIDO) "
-            "ORDER BY SA.CANT DESC");
+            "AND NOT EXISTS ("
+            "    SELECT 1 "
+            "    FROM PRODUCTOS_PEDIDO PP "
+            "    JOIN PEDIDO PED ON PP.ID_PED = PED.ID_PED "
+            "    WHERE PP.ID_PR = SA.ID_PR "
+            "    AND PED.F_ENV_PED >= date('now', '-3 month')"
+            ") ";
 
+    if (idAlm == -1) {
+        snprintf(sql, sizeof(sql), "%s ORDER BY SA.CANT DESC", base_query);
     } else {
-
-        snprintf(sql, sizeof(sql),
-            "SELECT SA.ID_PR, P.NOM_PR, C.NOM_CAT, "
-            "       SA.ID_ALM, A.NOM_ALM, SA.VARIANTE, SA.CANT "
-            "FROM STOCK_ALMACEN SA "
-            "JOIN PRODUCTO P   ON SA.ID_PR  = P.ID_PR "
-            "JOIN CATEGORIA C  ON P.ID_CAT  = C.ID_CAT "
-            "JOIN ALMACEN A    ON SA.ID_ALM  = A.ID_ALM "
-            "WHERE SA.CANT > 0 AND SA.ID_ALM = %d "
-            "AND SA.ID_PR NOT IN (SELECT DISTINCT ID_PR FROM PRODUCTOS_PEDIDO) "
-            "ORDER BY SA.CANT DESC", idAlm);
-
+        snprintf(sql, sizeof(sql), "%s AND SA.ID_ALM = %d ORDER BY SA.CANT DESC", base_query, idAlm);
     }
 
     sqlite3_stmt* pstmt;
