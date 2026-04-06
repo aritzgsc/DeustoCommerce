@@ -687,7 +687,7 @@ void pantallaAddStock(sqlite3* db, int idAlm) {
             char regFinancieroPath[256];
             configGet(CONFIG_PATH, "REG_FINANCIERO_PATH", regFinancieroPath, sizeof(regFinancieroPath));
 
-            char concepto[128];
+            char concepto[512];
             snprintf(concepto, sizeof(concepto), "Stock añadido: #%d — %s || %d uds. => #%d | %s, %s", p->id, p->nombre, cant, a->id, a->ubicacion.ciudad.nombre, a->ubicacion.ciudad.pais.nombre);
             registrarTransaccion(regFinancieroPath, "GASTO", concepto, coste);
 
@@ -813,7 +813,7 @@ void pantallaMoverStock(sqlite3* db, int idAlm) {
             char regFinancieroPath[256];
             configGet(CONFIG_PATH, "REG_FINANCIERO_PATH", regFinancieroPath, sizeof(regFinancieroPath));
 
-            char concepto[128];
+            char concepto[512];
             snprintf(concepto, sizeof(concepto), "Stock trasvasado: #%d | %s, %s -> #%d | %s, %s || %d unidades de #%d — %s", orig->id, orig->ubicacion.ciudad.nombre, orig->ubicacion.ciudad.pais.nombre, dest->id, dest->ubicacion.ciudad.nombre, dest->ubicacion.ciudad.pais.nombre, cant, p->id, p->nombre);
             registrarTransaccion(regFinancieroPath, "GASTO", concepto, coste);
 
@@ -897,7 +897,7 @@ void pantallaRestock(sqlite3* db, int idAlm) {
             char regFinancieroPath[256];
             configGet(CONFIG_PATH, "REG_FINANCIERO_PATH", regFinancieroPath, sizeof(regFinancieroPath));
 
-            char concepto[128];
+            char concepto[512];
             snprintf(concepto, sizeof(concepto), "Restock completado: #%d — %s, %s || %d unidades añadidas", a->id, a->ubicacion.ciudad.nombre, a->ubicacion.ciudad.pais.nombre, anadido);
             registrarTransaccion(regFinancieroPath, "GASTO", concepto, coste);
 
@@ -961,7 +961,7 @@ void pantallaEliminarAlmacen(sqlite3* db, int idAlm) {
             char regFinancieroPath[256];
             configGet(CONFIG_PATH, "REG_FINANCIERO_PATH", regFinancieroPath, sizeof(regFinancieroPath));
 
-            char concepto[128];
+            char concepto[512];
             snprintf(concepto, sizeof(concepto), "Almacén cerrado: #%d — %s, %s || Stock reubicado correctamente", a->id, a->ubicacion.ciudad.nombre, a->ubicacion.ciudad.pais.nombre);
             registrarTransaccion(regFinancieroPath, "GASTO", concepto, coste);
 
