@@ -155,7 +155,7 @@ int pantallaBalance(sqlite3* db, char* rutaCsv, char* rutaReports) {
             time_t ahora = time(NULL);
             struct tm* tm = localtime(&ahora);
             char nombreFich[256];
-            snprintf(nombreFich, sizeof(nombreFich), "%sbalances/%04d/balance_%02d%02d.xlsx", rutaReports, tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday);
+            snprintf(nombreFich, sizeof(nombreFich), "%sbalance_%04d%02d%02d.xlsx", rutaReports, tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday);
 
             imprimirInfo("Generando Excel...");
             if (generarExcelBalance(items, n, totalIngresos, totalGastos, nombreFich) == 0) {
@@ -296,7 +296,7 @@ int pantallaDeadStock(sqlite3* db, char* rutaReports) {
             time_t ahora = time(NULL);
             struct tm* tm = localtime(&ahora);
             char nombreFich[256];
-            snprintf(nombreFich, sizeof(nombreFich), "%sdeads/%04d/dead_stock_%02d%02d.csv", rutaReports, tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday);
+            snprintf(nombreFich, sizeof(nombreFich), "%sdead_stock_%04d%02d%02d.csv", rutaReports, tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday);
 
             if (exportarDeadStockCsv(items, n, nombreFich) == 0) {
 
@@ -441,7 +441,7 @@ int pantallaTopVentas(sqlite3* db, char* rutaReports) {
             time_t ahora = time(NULL);
             struct tm* tm = localtime(&ahora);
             char nombreFich[256];
-            snprintf(nombreFich, sizeof(nombreFich), "%stops/top_ventas_%04d%02d%02d.csv", rutaReports, tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday);
+            snprintf(nombreFich, sizeof(nombreFich), "%stop_ventas_%04d%02d%02d.csv", rutaReports, tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday);
 
             FILE* f = fopen(nombreFich, "w");
             if (f) {

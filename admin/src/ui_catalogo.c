@@ -132,6 +132,11 @@ int seleccionarProducto(sqlite3* db, char* varianteSalida, int maxLen, int idAlm
 
         int totalPags = total > 0 ? (total + ITEMS_POR_PAGINA - 1) / ITEMS_POR_PAGINA : 1;
 
+        if (pagina > totalPags) {
+        	pagina = totalPags;
+			prods = buscarProductos(db, f, pagina, &total);
+        }
+
         char subtitulo[64];
         if (idAlm != -1) snprintf(subtitulo, sizeof(subtitulo), "Productos disponibles en almacen #%d", idAlm);
         else snprintf(subtitulo, sizeof(subtitulo), "Busca y selecciona un producto");
@@ -354,6 +359,8 @@ int seleccionarCategoria(sqlite3* db) {
     while (!salir) {
 
         int totalPags = nFiltradas > 0 ? (nFiltradas + CATS_POR_PAGINA - 1) / CATS_POR_PAGINA : 1;
+
+        if (pagina > totalPags) pagina = totalPags;
 
         imprimirCabecera("SELECCIONAR CATEGORIA", "Elige la categoria del producto");
 
@@ -601,7 +608,7 @@ void pantallaBuscar(sqlite3* db) {
 
     while (!salir) {
 
-    	prods  = buscarProductos(db, f, pagina, &total);
+    	prods = buscarProductos(db, f, pagina, &total);
 
         imprimirCabecera("BUSCAR PRODUCTOS", "Añade filtros y ejecuta la busqueda");
 
@@ -627,6 +634,11 @@ void pantallaBuscar(sqlite3* db) {
         }
 
         int totalPags = total > 0 ? (total + ITEMS_POR_PAGINA - 1) / ITEMS_POR_PAGINA : 1;
+
+        if (pagina > totalPags) {
+        	pagina = totalPags;
+        	prods = buscarProductos(db, f, pagina, &total);
+        }
 
         int enEstaPagina = total - (pagina - 1) * ITEMS_POR_PAGINA;
         if (enEstaPagina > ITEMS_POR_PAGINA) enEstaPagina = ITEMS_POR_PAGINA;
