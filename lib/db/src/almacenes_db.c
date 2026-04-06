@@ -1,6 +1,7 @@
 #include "almacenes_db.h"
 #include "productos_db.h"
 #include "logistica.h"
+#include "estructuras.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,6 +9,9 @@
 #include <ctype.h>
 
 #define ITEMS_POR_PAGINA 15
+
+#define COSTE_MANIPULACION_UND 0.05
+#define MARGEN_GANANCIAS 0.5
 
 // AUXILIARES INTERNAS
 
@@ -23,15 +27,39 @@ static Almacen almacenDB(sqlite3_stmt* stmt) {
     a.ubicacion.direccion = strdup((char*)sqlite3_column_text(stmt, 4));
     a.ubicacion.latitud = sqlite3_column_double(stmt, 5);
     a.ubicacion.longitud = sqlite3_column_double(stmt, 6);
+    a.ubicacion.ciudad.id = sqlite3_column_int(stmt, 7);
+    a.ubicacion.ciudad.nombre = strdup((char*)sqlite3_column_text(stmt, 8));
+    a.ubicacion.ciudad.pais.id = strdup((char*)sqlite3_column_text(stmt, 9));
+    a.ubicacion.ciudad.pais.nombre = strdup((char*)sqlite3_column_text(stmt, 10));
     return a;
+
+}
+
+void liberarAlmacen(Almacen* a) {
+
+    if (!a) return;
+
+    free(a->nombre);
+    free(a->ubicacion.direccion);
+    free(a->ubicacion.ciudad.nombre);
+    free(a->ubicacion.ciudad.pais.id);
+    free(a->ubicacion.ciudad.pais.nombre);
+
+}
+
+void liberarAlmacenes(Almacen* almacenes, int nAlm) {
+
+	if (!almacenes || nAlm == 0) return;
+	for (int i = 0 ; i < nAlm ; i++) liberarAlmacen(&almacenes[i]);
 
 }
 
 static char* sqlAlmacenBase =
     "SELECT A.ID_ALM, A.NOM_ALM, A.CAP_MAX, "
-    "       U.ID_UB, U.DIR_UB, U.LAT_UB, U.LON_UB "
-    "FROM ALMACEN A, UBICACION U "
-    "WHERE A.ID_UB = U.ID_UB";
+    "       U.ID_UB, U.DIR_UB, U.LAT_UB, U.LON_UB, "
+	"       CIU.ID_CIU, CIU.NOM_CIU, PA.ID_PA, PA.NOM_PA "
+    "FROM ALMACEN A, UBICACION U, CIUDAD CIU, PAIS PA "
+    "WHERE A.ID_UB = U.ID_UB AND U.ID_CIU = CIU.ID_CIU AND CIU.ID_PA = PA.ID_PA";
 
 // CONSULTAS
 
@@ -333,45 +361,60 @@ int eliminarAlmacen(sqlite3* db, int idAlm) {
 
     if (!db) return -1;
 
-    // Obtenemos el almacén a eliminar para tener su ubicación
     Almacen* aElim = getAlmacenPorId(db, idAlm);
     if (!aElim) return -1;
 
-    // Obtenemos todos los almacenes restantes para reubicar stock
     int nAlm = 0;
     Almacen* todos = getAlmacenes(db, &nAlm);
 
-    // Reubicamos cada fila de stock al almacén más cercano
-    sqlite3_stmt* stmtStock;
+    // Creamos el array de candidatos, calculamos distancias y espacio
+    AlmCandidato* candidatos = malloc(sizeof(AlmCandidato) * nAlm);
+    int nCand = 0;
+
+    for (int i = 0; i < nAlm; i++) {
+
+        if (todos[i].id == idAlm) continue;
+
+        int ocup = getOcupacionAlmacen(db, todos[i].id);
+        candidatos[nCand].alm = &todos[i];
+        candidatos[nCand].distancia = calcularDistancia(aElim->ubicacion, todos[i].ubicacion);
+        candidatos[nCand].espacioLibre = todos[i].capacidad - ocup;
+        nCand++;
+
+    }
+
+    // Ordenamos el array por distancia (los más cercanos al principio)
+    if (nCand > 0) qsort(candidatos, nCand, sizeof(AlmCandidato), cmpCandidatos);
+
+    sqlite3_exec(db, "BEGIN TRANSACTION;", NULL, NULL, NULL);
+
+    // Reubicación
+    sqlite3_stmt* pstmtStock;
     char sqlStock[] =
         "SELECT ID_PR, VARIANTE, CANT FROM STOCK_ALMACEN "
         "WHERE ID_ALM = ? AND DISPONIBLE = 1";
 
-    if (sqlite3_prepare_v2(db, sqlStock, -1, &stmtStock, NULL) == SQLITE_OK) {
+    if (sqlite3_prepare_v2(db, sqlStock, -1, &pstmtStock, NULL) == SQLITE_OK) {
 
-    	sqlite3_bind_int(stmtStock, 1, idAlm);
+        sqlite3_bind_int(pstmtStock, 1, idAlm);
 
-        while (sqlite3_step(stmtStock) == SQLITE_ROW) {
+        while (sqlite3_step(pstmtStock) == SQLITE_ROW) {
 
-            int idProd  = sqlite3_column_int(stmtStock, 0);
-            char* variante = strdup((char*)sqlite3_column_text(stmtStock, 1));
-            int cant    = sqlite3_column_int(stmtStock, 2);
+            int idProd  = sqlite3_column_int(pstmtStock, 0);
+            char* variante = strdup((char*)sqlite3_column_text(pstmtStock, 1));
+            int cant = sqlite3_column_int(pstmtStock, 2);
 
-            // Buscamos el almacén más cercano con espacio
             int idDestino = -1;
-            double minDist   = 1e18;
 
-            for (int i = 0; i < nAlm; i++) {
+            // Como el array ya está ordenado, el primer almacén que tenga hueco es el más cercano
+            for (int i = 0; i < nCand; i++) {
 
-                if (todos[i].id == idAlm) continue;
-                int ocup = getOcupacionAlmacen(db, todos[i].id);
-                if (ocup + cant > todos[i].capacidad) continue;
+                if (candidatos[i].espacioLibre >= cant) {
 
-                double dist = calcularDistancia(
-                    aElim->ubicacion, todos[i].ubicacion);
-                if (dist < minDist) {
-                    minDist = dist;
-                    idDestino = todos[i].id;
+                    idDestino = candidatos[i].alm->id;
+                    candidatos[i].espacioLibre -= cant;
+                    break;
+
                 }
 
             }
@@ -379,34 +422,62 @@ int eliminarAlmacen(sqlite3* db, int idAlm) {
             if (idDestino != -1) addStock(db, idDestino, idProd, variante, cant);
 
             free(variante);
-
         }
 
-        sqlite3_finalize(stmtStock);
+        sqlite3_finalize(pstmtStock);
 
     }
 
-    // Liberamos memoria
-    for (int i = 0; i < nAlm; i++) {
+    free(candidatos); // Liberamos la estructura auxiliar
 
+    // Liberamos memoria de los arrays de almacenes
+    for (int i = 0; i < nAlm; i++) {
         free(todos[i].nombre);
         free(todos[i].ubicacion.direccion);
+    }
+    free(todos);
 
+    // Borramos el almacén
+    sqlite3_stmt* pstmtDelAlm;
+    char sqlDelAlm[] = "DELETE FROM ALMACEN WHERE ID_ALM = ?";
+    if (sqlite3_prepare_v2(db, sqlDelAlm, -1, &pstmtDelAlm, NULL) != SQLITE_OK) {
+        sqlite3_exec(db, "ROLLBACK;", NULL, NULL, NULL);
+        return -1;
     }
 
-    free(todos);
+    sqlite3_bind_int(pstmtDelAlm, 1, idAlm);
+    int res = sqlite3_step(pstmtDelAlm) == SQLITE_DONE ? 0 : -1;
+    sqlite3_finalize(pstmtDelAlm);
+
+    if (res == -1) {
+        sqlite3_exec(db, "ROLLBACK;", NULL, NULL, NULL);
+        free(aElim->nombre);
+        free(aElim->ubicacion.direccion);
+        free(aElim);
+        return res;
+    }
+
+    sqlite3_stmt* pstmtDelUb;
+    char sqlDelUb[] = "DELETE FROM UBICACION WHERE ID_UB = ?";
+    if (sqlite3_prepare_v2(db, sqlDelUb, -1, &pstmtDelUb, NULL) != SQLITE_OK) {
+        sqlite3_exec(db, "ROLLBACK;", NULL, NULL, NULL);
+        return -1;
+    }
+
+    sqlite3_bind_int(pstmtDelUb, 1, aElim->ubicacion.id);
+    res = sqlite3_step(pstmtDelUb) == SQLITE_DONE ? 0 : -1;
+    sqlite3_finalize(pstmtDelUb);
+
     free(aElim->nombre);
     free(aElim->ubicacion.direccion);
     free(aElim);
 
-    // Borramos el almacén (CASCADE borra su stock y su ubicación)
-    sqlite3_stmt* pstmt;
-    char sql[] = "DELETE FROM ALMACEN WHERE ID_ALM = ?";
-    if (sqlite3_prepare_v2(db, sql, -1, &pstmt, NULL) != SQLITE_OK) return -1;
+    if (res == 0) {
+        sqlite3_exec(db, "COMMIT;", NULL, NULL, NULL);
+    } else {
+        sqlite3_exec(db, "ROLLBACK;", NULL, NULL, NULL);
+    }
 
-    sqlite3_bind_int(pstmt, 1, idAlm);
-    int res = sqlite3_step(pstmt) == SQLITE_DONE ? 0 : -1;
-    sqlite3_finalize(pstmt);
     return res;
 
 }
@@ -509,9 +580,11 @@ int moverStock(sqlite3* db, int idAlmOrigen, int idAlmDestino, int idProd, char*
 
 }
 
-int restock(sqlite3* db, int idAlm) {
+int restock(sqlite3* db, int idAlm, double* costeReal) {
 
-	if (!db) return -1;
+    if (!db) return -1;
+
+    if (costeReal) *costeReal = 0.0;
 
     Almacen* a = getAlmacenPorId(db, idAlm);
     if (!a) return -1;
@@ -519,9 +592,7 @@ int restock(sqlite3* db, int idAlm) {
     int ocupacion = getOcupacionAlmacen(db, idAlm);
     int objetivo = (int)(a->capacidad * 0.8);
 
-    free(a->nombre);
-    free(a->ubicacion.direccion);
-    free(a);
+    liberarAlmacen(a);
 
     if (ocupacion >= objetivo) return 0;  // ya está al 80% o más
 
@@ -603,9 +674,11 @@ int restock(sqlite3* db, int idAlm) {
     if (targetBasePorProd == 0) return 0;
 
     sqlite3_stmt* pstmt;
+
     char sql[] =
-        "SELECT SA.ID_PR, SA.VARIANTE, SA.CANT, NV.N_VARIANTES "
+        "SELECT SA.ID_PR, SA.VARIANTE, SA.CANT, NV.N_VARIANTES, P.PRECIO_PR "
         "FROM STOCK_ALMACEN SA "
+        "JOIN PRODUCTO P ON SA.ID_PR = P.ID_PR "
         "JOIN (SELECT ID_PR, COUNT(*) AS N_VARIANTES "
         "      FROM STOCK_ALMACEN "
         "      WHERE ID_ALM = ? AND DISPONIBLE = 1 "
@@ -626,6 +699,7 @@ int restock(sqlite3* db, int idAlm) {
         char* variante = strdup((char*)sqlite3_column_text(pstmt, 1));
         int cantActual = sqlite3_column_int(pstmt, 2);
         int nVariantes = sqlite3_column_int(pstmt, 3);
+        double precioProd = sqlite3_column_double(pstmt, 4);
 
         int targetBasePorVariante = nVariantes > 1 ? (targetBasePorProd / nVariantes) + 1 : targetBasePorProd;
 
@@ -635,6 +709,12 @@ int restock(sqlite3* db, int idAlm) {
         if (deficitVariante > 0) {
             addStock(db, idAlm, idProd, variante, deficitVariante);
             totalAnadido += deficitVariante;
+
+            // Calculamos el coste real de esta variante añadida y lo sumamos
+            if (costeReal) {
+                double costeVariante = (deficitVariante * precioProd * (1.0 - MARGEN_GANANCIAS)) + (deficitVariante * COSTE_MANIPULACION_UND);
+                *costeReal += costeVariante;
+            }
         }
 
         free(variante);

@@ -7,11 +7,14 @@
 // CONSULTAS DE ALMACÉN
 
 // Devuelve todos los almacenes con su ocupación calculada.
-// *n = número de almacenes. Liberar con free().
+// *n = número de almacenes.
 Almacen* getAlmacenes(sqlite3* db, int* n);
 
-// Devuelve un almacén por ID o NULL si no existe. Liberar con free().
+// Devuelve un almacén por ID o NULL si no existe.
 Almacen* getAlmacenPorId(sqlite3* db, int idAlm);
+
+void liberarAlmacen(Almacen* a);
+void liberarAlmacenes(Almacen* almacenes, int nAlm);
 
 // Devuelve la ocupación actual (suma de CANT) de un almacén.
 int getOcupacionAlmacen(sqlite3* db, int idAlm);
@@ -49,6 +52,6 @@ int moverStock(sqlite3* db, int idAlmOrigen, int idAlmDestino, int idProd, char*
 // Ejecuta el restock automático de un almacén:
 // llena hasta el ~80% de capacidad repartiendo equitativamente.
 // Devuelve unidades añadidas o -1 si falla.
-int restock(sqlite3* db, int idAlm);
+int restock(sqlite3* db, int idAlm, double* costeReal);
 
 #endif /* DB_INCLUDE_ALMACENES_DB_H_ */

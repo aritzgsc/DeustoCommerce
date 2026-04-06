@@ -116,4 +116,17 @@ typedef struct Almacen {
 
 } Almacen;
 
+// AUXILIARES ALMACENES
+
+// Estructura auxiliar
+typedef struct {
+    Almacen* alm;
+    double distancia;
+    int espacioLibre;
+    int cantAEnviar;
+} AlmCandidato;
+
+// Función comparadora para qsort (ordena de menor a mayor distancia)
+int cmpCandidatos(const void* a, const void* b);
+
 #endif /* INCLUDE_ESTRUCTURAS_H_ */
