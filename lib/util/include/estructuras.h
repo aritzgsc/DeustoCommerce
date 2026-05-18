@@ -7,10 +7,10 @@
 
 typedef struct {
 
-	char* correo;
-	char* nombre;
-	char* apellido;
-	char* contrasena;
+	char correo[128];
+	char nombre[64];
+	char apellido[64];
+	char contrasenaHash[128];
 
 } Usuario;
 
@@ -69,12 +69,6 @@ typedef struct {
 
 } Producto;
 
-typedef enum {
-
-	NO_PEDIDO, EN_PROCESO, ENVIADO, ENTREGADO, CANCELADO
-
-} Estado;
-
 typedef struct {
 
 	Producto producto;
@@ -84,16 +78,22 @@ typedef struct {
 
 typedef struct {
 
-	ProdCant *productos;
-	int nProductosDiferentes;
-	Estado estado;
-	double precioCompra;
-	Ubicacion destino;
-	time_t fechaEnvio;
-	time_t fechaRecibo;
-	Usuario usuario;
+    int id;
+    char* fecha;
+    char* estado;
+    double total;
+    char* resumenDir;
 
 } Pedido;
+
+typedef struct {
+
+	char* correo;
+	double valoracion;
+	char* comentario;
+	char* fecha;
+
+} Resena;
 
 // ALMACENES
 
@@ -120,10 +120,12 @@ typedef struct Almacen {
 
 // Estructura auxiliar
 typedef struct {
+
     Almacen* alm;
     double distancia;
     int espacioLibre;
     int cantAEnviar;
+
 } AlmCandidato;
 
 // Función comparadora para qsort (ordena de menor a mayor distancia)

@@ -2,6 +2,7 @@
 #define UTIL_INCLUDE_API_H_
 
 #include <stdlib.h>
+#include "curl/curl.h"
 #include "estructuras.h"
 
 typedef struct {
@@ -19,6 +20,7 @@ void liberarRespuesta(Respuesta* resp);
 Ubicacion* calleAleatoria(Ciudad ciudad);
 
 // Actualiza la ubicación con las coordenadas precisas obtenidas llamando a la API
-int completarUbicacion(Ubicacion* ubi, char* pais, char* ciudad, char* direccion);
+int completarUbicacion(Ubicacion* ubi, const char* pais, const char* ciudad, const char* direccion);
+void liberarUbicacionApi(Ubicacion* ubi);
 
 #endif /* UTIL_INCLUDE_API_H_ */

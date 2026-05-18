@@ -1,6 +1,5 @@
 #include "api.h"
 #include "estructuras.h"
-#include "curl/curl.h"
 #include "cJSON.h"
 #include <string.h>
 #include <stdio.h>
@@ -255,9 +254,9 @@ Ubicacion* calleAleatoria(Ciudad ciudad) {
 
 }
 
-// Función que a partir de un país, ciudad y dirección, devuelve un puntero a ubicación correspondiente
+// Función que a partir de un país, ciudad y dirección, devuelve si se ha ejecutado correctamente
 
-int completarUbicacion(Ubicacion* ubi, char* pais, char* ciudad, char* direccion) {
+int completarUbicacion(Ubicacion* ubi, const char* pais, const char* ciudad, const char* direccion) {
 
 	// Codificamos y construimos la URL de Nominatim
 
@@ -287,7 +286,6 @@ int completarUbicacion(Ubicacion* ubi, char* pais, char* ciudad, char* direccion
 
 	cJSON* resultado = cJSON_GetArrayItem(rootNominatim, 0);
 	if (!resultado) {
-		printf("Nominatim vacío para %s en %s %s\n", direccion, ciudad, pais);
 		cJSON_Delete(rootNominatim);
 		return 1;
 	}
@@ -308,5 +306,13 @@ int completarUbicacion(Ubicacion* ubi, char* pais, char* ciudad, char* direccion
 	cJSON_Delete(rootNominatim);
 
 	return 0;
+
+}
+
+void liberarUbicacionApi(Ubicacion* ubi) {
+
+	free(ubi->ciudad.pais.nombre);
+	free(ubi->ciudad.nombre);
+	free(ubi->direccion);
 
 }
