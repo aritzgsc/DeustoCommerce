@@ -1,5 +1,5 @@
+#include "catalogo_db.h"
 #include "almacenes_db.h"
-#include "productos_db.h"
 #include "logistica.h"
 #include "estructuras.h"
 #include <stdio.h>
@@ -7,8 +7,7 @@
 #include <string.h>
 #include <math.h>
 #include <ctype.h>
-
-#define ITEMS_POR_PAGINA 15
+#include <utils_ui.h>
 
 #define COSTE_MANIPULACION_UND 0.05
 #define MARGEN_GANANCIAS 0.5
@@ -232,6 +231,97 @@ void liberarStock(StockProd* prods, int n) {
 
 }
 
+int actualizarEstadoStock(sqlite3* db, int idAlm, int idProd, const char* variante, int cant) {
+    if (!db || cant <= 0) return -1;
+
+    sqlite3_exec(db, "BEGIN TRANSACTION;", NULL, NULL, NULL);
+
+    // RESTAMOS DEL STOCK EN TRÁNSITO (DISPONIBLE = 0)
+    sqlite3_stmt* pstmtSub0;
+    char sqlSub0[] =
+        "UPDATE STOCK_ALMACEN SET CANT = CANT - ? "
+        "WHERE ID_ALM = ? AND ID_PR = ? AND VARIANTE = ? AND DISPONIBLE = 0";
+
+    if (sqlite3_prepare_v2(db, sqlSub0, -1, &pstmtSub0, NULL) != SQLITE_OK) {
+        sqlite3_exec(db, "ROLLBACK;", NULL, NULL, NULL);
+        return -1;
+    }
+
+    sqlite3_bind_int(pstmtSub0, 1, cant);
+    sqlite3_bind_int(pstmtSub0, 2, idAlm);
+    sqlite3_bind_int(pstmtSub0, 3, idProd);
+    sqlite3_bind_text(pstmtSub0, 4, variante, -1, SQLITE_STATIC);
+    sqlite3_step(pstmtSub0);
+    sqlite3_finalize(pstmtSub0);
+
+    // Limpiamos la fila de tránsito si su cantidad llegó a 0 (o menos) para mantener limpia la BD
+    sqlite3_stmt* pstmtDel0;
+    char sqlDel0[] =
+        "DELETE FROM STOCK_ALMACEN "
+        "WHERE ID_ALM = ? AND ID_PR = ? AND VARIANTE = ? AND DISPONIBLE = 0 AND CANT <= 0";
+
+    if (sqlite3_prepare_v2(db, sqlDel0, -1, &pstmtDel0, NULL) == SQLITE_OK) {
+
+        sqlite3_bind_int(pstmtDel0, 1, idAlm);
+        sqlite3_bind_int(pstmtDel0, 2, idProd);
+        sqlite3_bind_text(pstmtDel0, 3, variante, -1, SQLITE_STATIC);
+        sqlite3_step(pstmtDel0);
+        sqlite3_finalize(pstmtDel0);
+
+    }
+
+    // SUMAMOS AL STOCK REAL (DISPONIBLE = 1)
+    sqlite3_stmt* pstmtUpdate1;
+    char sqlUpdate1[] =
+        "UPDATE STOCK_ALMACEN SET CANT = CANT + ? "
+        "WHERE ID_ALM = ? AND ID_PR = ? AND VARIANTE = ? AND DISPONIBLE = 1";
+
+    if (sqlite3_prepare_v2(db, sqlUpdate1, -1, &pstmtUpdate1, NULL) != SQLITE_OK) {
+        sqlite3_exec(db, "ROLLBACK;", NULL, NULL, NULL);
+        return -1;
+    }
+
+    sqlite3_bind_int(pstmtUpdate1, 1, cant);
+    sqlite3_bind_int(pstmtUpdate1, 2, idAlm);
+    sqlite3_bind_int(pstmtUpdate1, 3, idProd);
+    sqlite3_bind_text(pstmtUpdate1, 4, variante, -1, SQLITE_STATIC);
+    sqlite3_step(pstmtUpdate1);
+
+    int filas = sqlite3_changes(db);
+    sqlite3_finalize(pstmtUpdate1);
+
+    // Si no existía la variante en DISPONIBLE = 1, hacemos un INSERT
+    if (filas == 0) {
+        sqlite3_stmt* pstmtInsert1;
+        char sqlInsert1[] =
+            "INSERT INTO STOCK_ALMACEN (ID_PR, ID_ALM, VARIANTE, DISPONIBLE, CANT) "
+            "VALUES (?, ?, ?, 1, ?)";
+
+        if (sqlite3_prepare_v2(db, sqlInsert1, -1, &pstmtInsert1, NULL) != SQLITE_OK) {
+            sqlite3_exec(db, "ROLLBACK;", NULL, NULL, NULL);
+            return -1;
+        }
+
+        sqlite3_bind_int(pstmtInsert1, 1, idProd);
+        sqlite3_bind_int(pstmtInsert1, 2, idAlm);
+        sqlite3_bind_text(pstmtInsert1, 3, variante, -1, SQLITE_STATIC);
+        sqlite3_bind_int(pstmtInsert1, 4, cant);
+
+        int resInsert = sqlite3_step(pstmtInsert1) == SQLITE_DONE ? 0 : -1;
+        sqlite3_finalize(pstmtInsert1);
+
+        if (resInsert == -1) {
+            sqlite3_exec(db, "ROLLBACK;", NULL, NULL, NULL);
+            return -1;
+        }
+
+    }
+
+    sqlite3_exec(db, "COMMIT;", NULL, NULL, NULL);
+    return 0;
+
+}
+
 // ADMIN
 
 int crearAlmacen(sqlite3* db, Almacen a) {
@@ -357,7 +447,7 @@ int crearAlmacen(sqlite3* db, Almacen a) {
 
 }
 
-int eliminarAlmacen(sqlite3* db, int idAlm) {
+int eliminarAlmacen(sqlite3* db, int idAlm, time_t timestampEjecucion) {
 
     if (!db) return -1;
 
@@ -419,7 +509,7 @@ int eliminarAlmacen(sqlite3* db, int idAlm) {
 
             }
 
-            if (idDestino != -1) addStock(db, idDestino, idProd, variante, cant);
+            if (idDestino != -1) addStock(db, idDestino, idProd, variante, cant, timestampEjecucion);
 
             free(variante);
         }
@@ -484,15 +574,17 @@ int eliminarAlmacen(sqlite3* db, int idAlm) {
 
 // GESTIÓN DE STOCK
 
-int addStock(sqlite3* db, int idAlm, int idProd, char* variante, int cant) {
+int addStock(sqlite3* db, int idAlm, int idProd, char* variante, int cant, time_t timestampEjecucion) {
 
     if (!db || cant < 0) return -1;
+
+    int operacionExitosa = -1;
 
     // Intentamos UPDATE primero
     sqlite3_stmt* pstmtUpdate;
     char sqlUpdate[] =
         "UPDATE STOCK_ALMACEN SET CANT = CANT + ? "
-        "WHERE ID_ALM = ? AND ID_PR = ? AND VARIANTE = ? AND DISPONIBLE = 1";
+        "WHERE ID_ALM = ? AND ID_PR = ? AND VARIANTE = ? AND DISPONIBLE = 0";
 
     if (sqlite3_prepare_v2(db, sqlUpdate, -1, &pstmtUpdate, NULL) != SQLITE_OK) return -1;
 
@@ -503,30 +595,48 @@ int addStock(sqlite3* db, int idAlm, int idProd, char* variante, int cant) {
     sqlite3_step(pstmtUpdate);
 
     int filas = sqlite3_changes(db);
+    if (filas > 0) {
+    	operacionExitosa = 0;
+    }
     sqlite3_finalize(pstmtUpdate);
 
-    if (filas > 0) return 0;
 
-    // Si no existía, INSERT
-    sqlite3_stmt* pstmtInsert;
-    char sqlInsert[] =
-        "INSERT INTO STOCK_ALMACEN (ID_PR, ID_ALM, VARIANTE, DISPONIBLE, CANT) "
-        "VALUES (?, ?, ?, 1, ?)";
+    if (operacionExitosa != 0) {
 
-    if (sqlite3_prepare_v2(db, sqlInsert, -1, &pstmtInsert, NULL) != SQLITE_OK) return -1;
+		// Si no existía, INSERT
+		sqlite3_stmt* pstmtInsert;
+		char sqlInsert[] =
+			"INSERT INTO STOCK_ALMACEN (ID_PR, ID_ALM, VARIANTE, DISPONIBLE, CANT) "
+			"VALUES (?, ?, ?, 0, ?)";
 
-    sqlite3_bind_int(pstmtInsert,  1, idProd);
-    sqlite3_bind_int(pstmtInsert,  2, idAlm);
-    sqlite3_bind_text(pstmtInsert, 3, variante, -1, SQLITE_STATIC);
-    sqlite3_bind_int(pstmtInsert,  4, cant);
+		if (sqlite3_prepare_v2(db, sqlInsert, -1, &pstmtInsert, NULL) != SQLITE_OK) return -1;
 
-    int res = sqlite3_step(pstmtInsert) == SQLITE_DONE ? 0 : -1;
-    sqlite3_finalize(pstmtInsert);
-    return res;
+		sqlite3_bind_int(pstmtInsert,  1, idProd);
+		sqlite3_bind_int(pstmtInsert,  2, idAlm);
+		sqlite3_bind_text(pstmtInsert, 3, variante, -1, SQLITE_STATIC);
+		sqlite3_bind_int(pstmtInsert,  4, cant);
+
+		if (sqlite3_step(pstmtInsert) == SQLITE_DONE) {
+			operacionExitosa = 0;
+		}
+		sqlite3_finalize(pstmtInsert);
+
+    }
+
+    if (operacionExitosa == 0 && cant > 0) {
+
+        char datosFormateados[512];
+        snprintf(datosFormateados, sizeof(datosFormateados), "%d,%d,%s,%d", idAlm, idProd, variante, cant);
+
+        registrarAccion(timestampEjecucion, "ADD_STOCK", datosFormateados);
+
+    }
+
+    return operacionExitosa;
 
 }
 
-int moverStock(sqlite3* db, int idAlmOrigen, int idAlmDestino, int idProd, char* variante, int cant) {
+int moverStock(sqlite3* db, int idAlmOrigen, int idAlmDestino, int idProd, char* variante, int cant, time_t timestampEjecucion) {
 
 	if (!db || cant < 0) return -1;
 
@@ -576,11 +686,11 @@ int moverStock(sqlite3* db, int idAlmOrigen, int idAlmDestino, int idProd, char*
     sqlite3_finalize(pstmtResta);
 
     // Sumamos en destino
-    return addStock(db, idAlmDestino, idProd, variante, cant);
+    return addStock(db, idAlmDestino, idProd, variante, cant, timestampEjecucion);
 
 }
 
-int restock(sqlite3* db, int idAlm, double* costeReal) {
+int restock(sqlite3* db, int idAlm, double* costeReal, time_t timestampEjecucion) {
 
     if (!db) return -1;
 
@@ -646,6 +756,7 @@ int restock(sqlite3* db, int idAlm, double* costeReal) {
 
                 char varRaw[512];
                 strncpy(varRaw, nuevos[i].variantes, sizeof(varRaw) - 1);
+                varRaw[sizeof(varRaw) - 1] = '\0';
                 char* tok = strtok(varRaw, ",");
                 while (tok) {
 
@@ -655,7 +766,7 @@ int restock(sqlite3* db, int idAlm, double* costeReal) {
 
                     while (len > 0 && (tok[len-1] == '\r' || tok[len-1] == '\n')) tok[--len] = '\0';
 
-                    addStock(db, idAlm, nuevos[i].id, tok, 0);
+                    addStock(db, idAlm, nuevos[i].id, tok, 0, timestampEjecucion);
                     tok = strtok(NULL, ",");
 
                 }
@@ -681,9 +792,9 @@ int restock(sqlite3* db, int idAlm, double* costeReal) {
         "JOIN PRODUCTO P ON SA.ID_PR = P.ID_PR "
         "JOIN (SELECT ID_PR, COUNT(*) AS N_VARIANTES "
         "      FROM STOCK_ALMACEN "
-        "      WHERE ID_ALM = ? AND DISPONIBLE = 1 "
+        "      WHERE ID_ALM = ? "
         "      GROUP BY ID_PR) NV ON SA.ID_PR = NV.ID_PR "
-        "WHERE SA.ID_ALM = ? AND SA.DISPONIBLE = 1";
+        "WHERE SA.ID_ALM = ?";
 
     if (sqlite3_prepare_v2(db, sql, -1, &pstmt, NULL) != SQLITE_OK) return -1;
     sqlite3_bind_int(pstmt, 1, idAlm);
@@ -707,7 +818,7 @@ int restock(sqlite3* db, int idAlm, double* costeReal) {
         int deficitVariante = targetAleatorio - cantActual;
 
         if (deficitVariante > 0) {
-            addStock(db, idAlm, idProd, variante, deficitVariante);
+            addStock(db, idAlm, idProd, variante, deficitVariante, timestampEjecucion);
             totalAnadido += deficitVariante;
 
             // Calculamos el coste real de esta variante añadida y lo sumamos

@@ -1,4 +1,4 @@
-#include "ui_utils.h"
+#include <utils_ui.h>
 
 // SISTEMA (Funciones hechas y entendidas con ayuda de Claude)
 
@@ -195,33 +195,71 @@ void wordWrap(char* nuevo, char* texto, int padding) {
 
 // LAYOUT
 
+#define APPEND(...) do { \
+    int _w = snprintf(temp + pos, sizeof(temp) - pos, __VA_ARGS__); \
+    if (_w > 0 && pos + _w < sizeof(temp)) pos += _w; \
+} while(0)
+
+char* getLinea(char c, int ancho) {
+
+	char* buffer = malloc(sizeof(char) * (ancho + 2));
+	if (buffer == NULL) return NULL;
+
+	int pos = 0;
+	for (int i = 0; i < ancho; i++) buffer[pos++] = c;
+	buffer[pos++] = '\n';
+	buffer[pos] = '\0';
+
+	return buffer;
+
+}
+
 void imprimirLinea(char c, int ancho) {
 
-    for (int i = 0; i < ancho; i++) putchar(c);
-    putchar('\n');
+	char* linea = getLinea(c, ancho);
+    printf("%s", linea);
+    free(linea);
+
+}
+
+char* getCentrado(char* texto, int ancho) {
+
+    int len = strlen(texto);
+
+    int tamañoTotal = (ancho > len) ? ancho : len;
+
+    char* buffer = malloc(tamañoTotal + 1);
+
+    int pad = (ancho - len) / 2;
+    int padDer = ancho - len - pad;
+
+    int pos = 0;
+
+    for (int i = 0; i < pad; i++) buffer[pos++] = ' ';
+    for (int i = 0; i < len; i++) buffer[pos++] = texto[i];
+    for (int i = 0; i < padDer; i++) buffer[pos++] = ' ';
+
+    buffer[pos] = '\0';
+
+    return buffer;
 
 }
 
 void imprimirCentrado(char* texto, int ancho) {
 
-    int len = strlen(texto);
-    int pad = (ancho - len) / 2;
-    int padDer = ancho - len - pad;
-
-    for (int i = 0; i < pad; i++) putchar(' ');
-
-    printf("%s", texto);
-
-    for (int i = 0; i < padDer; i++) putchar(' ');
+	char* centrado = getCentrado(texto, ancho);
+	printf("%s", centrado);
+	free(centrado);
 
 }
 
-void imprimirCabecera(char* titulo, char* subtitulo) {
+char* getCabecera(char* titulo, char* subtitulo) {
 
-    limpiarPantalla();
+    char temp[8192] = ""; // 8KB es espacio de sobra para este bloque
+    int pos = 0;
 
     // Franja superior con logo
-    printf(ESTILO_TITULO
+    APPEND("\n" ESTILO_TITULO
            "  ╔══════════════════════════════════════════════════════════════════════════════════════════════════════════════╗\n"
            "  ║                                                                                                              ║\n"
            "  ║" RESET C_BLANCO NEGRITA
@@ -233,50 +271,76 @@ void imprimirCabecera(char* titulo, char* subtitulo) {
            "  ╠══════════════════════════════════════════════════════════════════════════════════════════════════════════════╣\n");
 
     // Título de la pantalla actual
-    printf("  ║  ");
-    printf(ESTILO_SUBTITULO "%s" RESET, titulo);
+    APPEND("  ║  " ESTILO_SUBTITULO "%s" RESET, titulo);
 
     int visibles = anchoVisible(titulo);
-    for (int i = visibles ; i < 108 ; i++) putchar(' ');
+    for (int i = visibles; i < 108; i++) APPEND(" ");
 
-    printf(ESTILO_TITULO "║\n");
+    APPEND(ESTILO_TITULO "║\n");
 
     // Subtítulo si existe
     if (subtitulo && strlen(subtitulo) > 0) {
-
     	char subtituloStr[109];
     	strncpy(subtituloStr, subtitulo, sizeof(subtituloStr));
     	subtituloStr[108] = '\0';
 
-        printf("  ║  ");
-        printf(ESTILO_HINT "%s" RESET, subtituloStr);
+        APPEND("  ║  " ESTILO_HINT "%s" RESET, subtituloStr);
 
         visibles = anchoVisible(subtitulo);
-        for (int i = visibles ; i < 108 ; i++) putchar(' ');
+        for (int i = visibles; i < 108; i++) APPEND(" ");
 
-        printf(ESTILO_TITULO "║\n");
-
+        APPEND(ESTILO_TITULO "║\n");
     }
 
-    printf("  ╚══════════════════════════════════════════════════════════════════════════════════════════════════════════════╝\n");
-    printf(RESET "\n");
+    APPEND("  ╚══════════════════════════════════════════════════════════════════════════════════════════════════════════════╝\n" RESET "\n");
+
+    // Copiamos el resultado exacto a la memoria dinámica
+    char* buffer = malloc(pos + 1);
+    if (buffer) strcpy(buffer, temp);
+    return buffer;
+
+}
+
+void imprimirCabecera(char* titulo, char* subtitulo) {
+
+    limpiarPantalla();
+    char* cabecera = getCabecera(titulo, subtitulo);
+    printf("%s", cabecera);
+    free(cabecera);
+
+}
+
+char* getSeccion(char* titulo) {
+
+    char temp[2048] = "";
+    int pos = 0;
+
+    APPEND("\n" C_GRIS "  ── " ESTILO_SUBTITULO "%s " RESET, titulo);
+    int len = strlen(titulo) + 6;
+
+    for (int i = len; i < ANCHO_PANTALLA - 2; i++) {
+        APPEND(C_GRIS "─" RESET);
+    }
+
+    APPEND("\n\n");
+
+    char* buffer = malloc(pos + 1);
+    if (buffer) strcpy(buffer, temp);
+    return buffer;
 
 }
 
 void imprimirSeccion(char* titulo) {
 
-    printf("\n" C_GRIS "  ── " ESTILO_SUBTITULO "%s " RESET, titulo);
-    int len = strlen(titulo) + 6;
-
-    for (int i = len; i < ANCHO_PANTALLA - 2; i++) printf(C_GRIS "─" RESET);
-
-    printf("\n\n");
+	char* seccion = getSeccion(titulo);
+	printf("%s", seccion);
+	free(seccion);
 
 }
 
-void imprimirDuracion(time_t segundos) {
+char* getDuracion(time_t segundos) {
 
-    int dias = segundos / (24 * 3600);
+	int dias = segundos / (24 * 3600);
     segundos %= (24 * 3600);
     int horas = segundos / 3600;
     segundos %= 3600;
@@ -285,30 +349,80 @@ void imprimirDuracion(time_t segundos) {
     char display[512] = "";
     int pos = 0;
 
-    if (dias) pos += snprintf(display + pos, sizeof(display), "%d dias, ", dias);
-    if (horas) pos += snprintf(display + pos, sizeof(display), "%d horas, ", horas);
-    if (minutos) pos += snprintf(display + pos, sizeof(display), "%d minutos, ", minutos);
+    if (dias) pos += snprintf(display + pos, sizeof(display) - pos, "%d dias, ", dias);
+    if (horas) pos += snprintf(display + pos, sizeof(display) - pos, "%d horas, ", horas);
+    pos += snprintf(display + pos, sizeof(display) - pos, "%d minutos, ", minutos);
 
     if (pos > 0) {
         display[pos - 2] = '\0';
     }
 
-    printf("%s\n", display);
+    // Reservamos memoria para el string final (+2 por el salto de línea y el \0)
+    char* buffer = malloc(strlen(display) + 2);
+    if (buffer) {
+        sprintf(buffer, "%s\n", display);
+    }
+
+    return buffer;
+
+}
+
+void imprimirDuracion(time_t segundos) {
+
+	char* duracion = getDuracion(segundos);
+	printf("%s", duracion);
+	free(duracion);
 
 }
 
 // FEEDBACK
 
+char* getExito(char* msg) {
+
+    int len = strlen(msg) + 128;
+    char* buffer = malloc(len);
+    if (buffer) snprintf(buffer, len, "\n  " ESTILO_EXITO "✔  %s" RESET "\n", msg);
+    return buffer;
+
+}
+
 void imprimirExito(char* msg) {
     printf("\n  " ESTILO_EXITO "✔  %s" RESET "\n", msg);
+}
+
+char* getError(char* msg) {
+
+    int len = strlen(msg) + 128;
+    char* buffer = malloc(len);
+    if (buffer) snprintf(buffer, len, "\n  " ESTILO_ERROR "✖  %s" RESET "\n", msg);
+    return buffer;
+
 }
 
 void imprimirError(char* msg) {
     printf("\n  " ESTILO_ERROR "✖  %s" RESET "\n", msg);
 }
 
+char* getWarn(char* msg) {
+
+    int len = strlen(msg) + 128;
+    char* buffer = malloc(len);
+    if (buffer) snprintf(buffer, len, "\n  " ESTILO_WARN "⚠  %s" RESET "\n", msg);
+    return buffer;
+
+}
+
 void imprimirWarn(char* msg) {
     printf("\n  " ESTILO_WARN "⚠  %s" RESET "\n", msg);
+}
+
+char* getInfo(char* msg) {
+
+    int len = strlen(msg) + 128;
+    char* buffer = malloc(len);
+    if (buffer) snprintf(buffer, len, "\n  " C_CYAN "ℹ  %s" RESET "\n", msg);
+    return buffer;
+
 }
 
 void imprimirInfo(char* msg) {
@@ -317,104 +431,147 @@ void imprimirInfo(char* msg) {
 
 // TABLAS
 
-void imprimirCabeceraTabla(Columna* cols, int nCols) {
+char* getCabeceraTabla(Columna* cols, int nCols) {
 
-    printf("  " ESTILO_TITULO);
+    char temp[4096] = "";
+    int pos = 0;
+
+    APPEND("  " ESTILO_TITULO);
 
     // Línea superior
-    printf("┌");
+    APPEND("┌");
     for (int i = 0; i < nCols; i++) {
-
-        for (int j = 0; j < cols[i].ancho + 2; j++) printf("─");
-        printf(i < nCols - 1 ? "┬" : "┐");
-
+        for (int j = 0; j < cols[i].ancho + 2; j++) APPEND("─");
+        APPEND("%s", i < nCols - 1 ? "┬" : "┐");
     }
-    printf("\n");
+    APPEND("\n");
 
     // Títulos
-    printf("  │");
+    APPEND("  │");
     for (int i = 0; i < nCols; i++) {
-
-        printf(" %-*s │", cols[i].ancho, cols[i].titulo);
-
+        APPEND(" %-*s │", cols[i].ancho, cols[i].titulo);
     }
-    printf("\n");
+    APPEND("\n");
 
     // Línea divisoria
-    printf("  ├");
+    APPEND("  ├");
     for (int i = 0; i < nCols; i++) {
-
-        for (int j = 0; j < cols[i].ancho + 2; j++) printf("─");
-        printf(i < nCols - 1 ? "┼" : "┤");
-
+        for (int j = 0; j < cols[i].ancho + 2; j++) APPEND("─");
+        APPEND("%s", i < nCols - 1 ? "┼" : "┤");
     }
-    printf(RESET "\n");
+    APPEND(RESET "\n");
+
+    char* buffer = malloc(pos + 1);
+    if (buffer) strcpy(buffer, temp);
+    return buffer;
+
+}
+
+void imprimirCabeceraTabla(Columna* cols, int nCols) {
+
+	char* cabeceraTabla = getCabeceraTabla(cols, nCols);
+	printf("%s", cabeceraTabla);
+	free(cabeceraTabla);
+
+}
+
+char* getFilaTabla(char** valores, Columna* cols, int nCols, int esImpar) {
+
+    char temp[4096] = "";
+    int pos = 0;
+
+    APPEND(ESTILO_TITULO "  │" RESET);
+
+    for (int i = 0; i < nCols; i++) {
+        char* val = valores[i] ? valores[i] : "";
+        int vis = anchoVisible(val);
+        int pad = cols[i].ancho - vis;
+        if (pad < 0) pad = 0;
+
+        if (esImpar) APPEND(C_GRIS);
+
+        if (cols[i].alineacion == 1) { // Derecha
+            APPEND(" ");
+            for (int j = 0; j < pad; j++) APPEND(" ");
+            APPEND("%s" RESET ESTILO_TITULO " │" RESET, val);
+        }
+        else if (cols[i].alineacion == 2) { // Centro
+            int padIzq = pad / 2;
+            int padDer = pad - padIzq;
+            APPEND(" ");
+            for (int j = 0; j < padIzq; j++) APPEND(" ");
+            APPEND("%s", val);
+            for (int j = 0; j < padDer; j++) APPEND(" ");
+            APPEND(RESET ESTILO_TITULO " │" RESET);
+        }
+        else { // Izquierda
+            APPEND(" %s", val);
+            for (int j = 0; j < pad; j++) APPEND(" ");
+            APPEND(RESET ESTILO_TITULO " │" RESET);
+        }
+    }
+    APPEND(RESET "\n");
+
+    char* buffer = malloc(pos + 1);
+    if (buffer) strcpy(buffer, temp);
+    return buffer;
 
 }
 
 void imprimirFilaTabla(char** valores, Columna* cols, int nCols, int esImpar) {
 
-    printf(ESTILO_TITULO "  │" RESET);
+	char* filaTabla = getFilaTabla(valores, cols, nCols, esImpar);
+	printf("%s", filaTabla);
+	free(filaTabla);
 
+}
+
+char* getPieTabla(Columna* cols, int nCols) {
+
+    char temp[4096] = "";
+    int pos = 0;
+
+    APPEND("  " ESTILO_TITULO "└");
     for (int i = 0; i < nCols; i++) {
-
-        char* val = valores[i] ? valores[i] : "";
-        int vis = anchoVisible(val);
-        int pad = cols[i].ancho - vis;  // espacios que faltan hasta el borde
-        if (pad < 0) pad = 0;
-
-        if (esImpar) printf(C_GRIS);
-
-        if (cols[i].alineacion == 1) {
-
-            // Derecha: pad a la izquierda
-            printf(" ");
-            for (int j = 0; j < pad; j++) putchar(' ');
-            printf("%s" RESET ESTILO_TITULO " │" RESET, val);
-
-        } else if (cols[i].alineacion == 2) {
-
-            // Centro: pad repartido a ambos lados
-            int padIzq = pad / 2;
-            int padDer = pad - padIzq;
-            printf(" ");
-            for (int j = 0; j < padIzq; j++) putchar(' ');
-            printf("%s", val);
-            for (int j = 0; j < padDer; j++) putchar(' ');
-            printf(RESET ESTILO_TITULO " │" RESET);
-
-        } else {
-
-            // Izquierda: pad a la derecha
-            printf(" %s", val);
-            for (int j = 0; j < pad; j++) putchar(' ');
-            printf(RESET ESTILO_TITULO " │" RESET);
-
-        }
+        for (int j = 0; j < cols[i].ancho + 2; j++) APPEND("─");
+        APPEND("%s", i < nCols - 1 ? "┴" : "┘");
     }
-    printf(RESET "\n");
+    APPEND(RESET "\n");
+
+    char* buffer = malloc(pos + 1);
+    if (buffer) strcpy(buffer, temp);
+    return buffer;
+
 }
 
 void imprimirPieTabla(Columna* cols, int nCols) {
 
-    printf("  " ESTILO_TITULO "└");
-    for (int i = 0; i < nCols; i++) {
+	char* pieTabla = getPieTabla(cols, nCols);
+	printf("%s", pieTabla);
+	free(pieTabla);
 
-        for (int j = 0; j < cols[i].ancho + 2; j++) printf("─");
-        printf(i < nCols - 1 ? "┴" : "┘");
+}
 
+char* getPaginacion(int pagActual, int totalPags, int totalItems) {
+
+    char* buffer = malloc(512); // Tamaño suficiente para esta cadena
+    if (buffer) {
+        snprintf(buffer, 512,
+           "\n  " ESTILO_HINT
+           "Página %d de %d  ·  %d resultados  "
+           "  [← ANTERIOR]  [SIGUIENTE →]"
+           RESET "\n",
+           pagActual, totalPags, totalItems);
     }
-    printf(RESET "\n");
+    return buffer;
 
 }
 
 void imprimirPaginacion(int pagActual, int totalPags, int totalItems) {
 
-    printf("\n  " ESTILO_HINT
-           "Página %d de %d  ·  %d resultados  "
-           "  [← ANTERIOR]  [SIGUIENTE →]"
-           RESET "\n",
-           pagActual, totalPags, totalItems);
+	char* paginacion = getPaginacion(pagActual, totalPags, totalItems);
+	printf("%s", paginacion);
+	free(paginacion);
 
 }
 
@@ -440,13 +597,18 @@ Entrada leerComando(char** opciones, int nOpciones, char* prompt) {
 
         int c = _getch();
 
-        if (c == TECLA_ENTER) {
+        if (c == 3) {
+
+        	strncpy(entrada.comando, "EXIT", sizeof(entrada.comando) - 1);
+        	return entrada;
+
+    	} else if (c == TECLA_ENTER) {
 
             buffer[pos] = '\0';
             printf("\n");
             break;
 
-        } else if (c == TECLA_ESC) {
+        } else if (c == TECLA_ESC || c == 127) {
 
             // ESC limpia el buffer
             for (int i = 0; i < pos; i++) printf("\b \b");
@@ -529,15 +691,20 @@ Entrada leerComando(char** opciones, int nOpciones, char* prompt) {
 
             }
 
-        } else if (c >= 32 && c < 127 && pos < 255) {
+        } else if (c >= 32 && c < 127 && pos < 255 && c != '|') {
 
-            // Carácter imprimible
+            // Carácter imprimible (excepto '|')
             buffer[pos++] = (char)c;
             buffer[pos]   = '\0';
             printf(ESTILO_CMD "%c" RESET, c);
             tabCiclo = -1;
             memset(tabBase, 0, sizeof(tabBase));
             fflush(stdout);
+
+        } else if (c == '|') {
+
+        	printf("\a");
+        	fflush(stdout);
 
         }
 
@@ -594,8 +761,7 @@ double leerDouble(char* prompt, double min, double max) {
 
         printf("  " ESTILO_SUBTITULO "%s" RESET " ", prompt);
         fgets(buf, sizeof(buf), stdin);
-        if (sscanf(buf, "%lf", &val) == 1 && val >= min && val <= max)
-            return val;
+        if (sscanf(buf, "%lf", &val) == 1 && val >= min && val <= max) return val;
         imprimirError("Valor fuera de rango o inválido.");
 
     }
@@ -604,12 +770,84 @@ double leerDouble(char* prompt, double min, double max) {
 
 void leerTexto(char* prompt, char* buffer, int maxLen) {
 
-    printf("  " ESTILO_SUBTITULO "%s" RESET " ", prompt);
-    fgets(buffer, maxLen, stdin);
+	while (1) {
 
-    // Quitamos el \n final
-    int len = strlen(buffer);
-    if (len > 0 && buffer[len - 1] == '\n') buffer[len - 1] = '\0';
+		printf("  " ESTILO_SUBTITULO "%s" RESET " ", prompt);
+
+		// Si fgets falla o se corta la entrada, aseguramos un string vacío y salimos
+		if (fgets(buffer, maxLen, stdin) == NULL) {
+			buffer[0] = '\0';
+			break;
+		}
+
+	    // Limpieza espacios finales
+	    int len = strlen(buffer);
+	    while (len > 0 && (buffer[len - 1] == '\n' || isspace((unsigned char)buffer[len - 1]))) {
+	        buffer[len - 1] = '\0';
+	        len--;
+	    }
+
+	    // Limpieza espacios iniciales
+	    int start = 0;
+	    while (buffer[start] != '\0' && isspace((unsigned char)buffer[start])) {
+	        start++;
+	    }
+
+	    // Si había espacios al principio, movemos el bloque completo hacia el inicio
+	    if (start > 0) {
+	        memmove(buffer, &buffer[start], len - start + 1);
+	    }
+
+	    // Control de seguridad (Anti '|')
+	    if (strchr(buffer, '|') != NULL) {
+	        imprimirError("El caracter '|' no esta permitido por motivos de seguridad.");
+	        continue; // Volvemos a pedir el input sin salir de la función
+	    }
+
+	    break; // Input 100% limpio y válido, salimos del bucle
+
+	}
+
+}
+
+void leerContrasena(char* prompt, char* buffer, int maxLen) {
+
+    while (1) {
+
+        printf("  " ESTILO_SUBTITULO "%s" RESET " ", prompt);
+        fflush(stdout); // Forzamos que se imprima el prompt antes de apagar el eco
+
+        HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
+        DWORD mode;
+        GetConsoleMode(hStdin, &mode);
+        // Apagamos el ECHO
+        SetConsoleMode(hStdin, mode & (~ENABLE_ECHO_INPUT));
+
+        fgets(buffer, maxLen, stdin);
+
+        // Restauramos el ECHO
+        SetConsoleMode(hStdin, mode);
+        printf("\n"); // Metemos un salto de línea porque el Enter del usuario no se pintó
+
+        // Quitamos el \n (y el \r si estamos en Windows) final
+        int len = strlen(buffer);
+        if (len > 0 && buffer[len - 1] == '\n') {
+            buffer[len - 1] = '\0';
+            len--;
+        }
+        if (len > 0 && buffer[len - 1] == '\r') {
+            buffer[len - 1] = '\0';
+        }
+
+        // Tus validaciones de seguridad
+        if (strchr(buffer, '|') != NULL) {
+            imprimirError("El caracter '|' no esta permitido por motivos de seguridad.");
+            continue; // Volvemos a pedir el input
+        }
+
+        break; // Input válido, salimos del bucle
+
+    }
 
 }
 

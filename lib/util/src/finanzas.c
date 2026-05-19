@@ -1,5 +1,4 @@
 #include "finanzas.h"
-#include "xlsxwriter.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -97,25 +96,10 @@ static void escribirTransacciones(lxw_worksheet* ws, Estilos* e, BalanceItem* it
 
         worksheet_write_string(ws, fila, 0, items[i].fecha, f);
         worksheet_write_string(ws, fila, 1, items[i].tipo, f);
-        worksheet_write_string(ws, fila, 2, items[i].concepto, f);
-        worksheet_write_number(ws, fila, 3, items[i].importe, f);
+        worksheet_write_string(ws, fila, 2, items[i].id, f);
+        worksheet_write_string(ws, fila, 3, items[i].concepto, f);
+        worksheet_write_number(ws, fila, 4, items[i].importe, f);
     }
-
-}
-
-static int obtenerDiaSemana(const char* fecha) {
-
-    int y, m, d;
-    if (sscanf(fecha, "%d-%d-%d", &y, &m, &d) != 3) return 0;
-
-    struct tm time_in = {0};
-    time_in.tm_year = y - 1900;
-    time_in.tm_mon  = m - 1;
-    time_in.tm_mday = d;
-    mktime(&time_in);
-
-    int wday = time_in.tm_wday;
-    return (wday == 0) ? 6 : wday - 1;
 
 }
 
@@ -124,9 +108,8 @@ static int obtenerDiaSemana(const char* fecha) {
 static void dibujarDashboardBI(lxw_workbook* wb, lxw_worksheet* ws, Estilos* e,
                                double totIng, double totGas,
                                MesAgrupado* arrayMeses, int numMeses,
-                               double* ingresosDia) {
+                               CategoriaAgrupada* arrayCategorias, int numCategorias) {
 
-    // CREAR HOJA DE DATOS OCULTA
     lxw_worksheet* wsData = workbook_add_worksheet(wb, "SysData");
     worksheet_hide(wsData);
 
@@ -140,10 +123,9 @@ static void dibujarDashboardBI(lxw_workbook* wb, lxw_worksheet* ws, Estilos* e,
         worksheet_write_number(wsData, i, 2, arrayMeses[i].gastos, NULL);
     }
 
-    char* diasSemana[] = {"Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"};
-    for (int d = 0; d < 7; d++) {
-        worksheet_write_string(wsData, d, 4, diasSemana[d], NULL);
-        worksheet_write_number(wsData, d, 5, ingresosDia[d], NULL);
+    for (int i = 0; i < numCategorias; i++) {
+        worksheet_write_string(wsData, i, 4, arrayCategorias[i].id, NULL);
+        worksheet_write_number(wsData, i, 5, arrayCategorias[i].total, NULL);
     }
 
     worksheet_write_string(wsData, 0, 7, "Ingresos", NULL);
@@ -151,7 +133,6 @@ static void dibujarDashboardBI(lxw_workbook* wb, lxw_worksheet* ws, Estilos* e,
     worksheet_write_string(wsData, 1, 7, "Gastos", NULL);
     worksheet_write_number(wsData, 1, 8, totGas, NULL);
 
-    // DASHBOARD BI
     worksheet_gridlines(ws, 2);
     worksheet_set_column(ws, 0, 0, 3, e->dash_bg);
     for(int i = 1; i <= 12; i++) {
@@ -184,7 +165,6 @@ static void dibujarDashboardBI(lxw_workbook* wb, lxw_worksheet* ws, Estilos* e,
     lxw_chart_options opt_mitad_izq = {.x_scale = 1.13, .y_scale = 1.20};
     lxw_chart_options opt_mitad_der = {.x_scale = 1.13, .y_scale = 1.20, .x_offset = 15};
 
-    // GRÁFICO 1
     if (numMeses > 1) {
         lxw_chart* cLinea = workbook_add_chart(wb, LXW_CHART_LINE);
 
@@ -232,19 +212,17 @@ static void dibujarDashboardBI(lxw_workbook* wb, lxw_worksheet* ws, Estilos* e,
 
     }
 
-    // GRÁFICO 2
-    lxw_chart* cDias = workbook_add_chart(wb, LXW_CHART_COLUMN);
-    lxw_chart_series* sD = chart_add_series(cDias, NULL, NULL);
-    chart_series_set_categories(sD, "SysData", 0, 4, 6, 4);
-    chart_series_set_values(sD, "SysData", 0, 5, 6, 5);
-    chart_series_set_fill(sD, &(lxw_chart_fill){.color = COLOR_SLATE_DARK});
+    lxw_chart* cGastoCat = workbook_add_chart(wb, LXW_CHART_PIE);
+    if (numCategorias > 0) {
+        lxw_chart_series* sC = chart_add_series(cGastoCat, NULL, NULL);
+        chart_series_set_categories(sC, "SysData", 0, 4, numCategorias - 1, 4);
+        chart_series_set_values(sC, "SysData", 0, 5, numCategorias - 1, 5);
+    }
+    chart_title_set_name(cGastoCat, "Desglose de Gastos");
+    chart_legend_set_position(cGastoCat, LXW_CHART_LEGEND_BOTTOM);
 
-    chart_title_set_name(cDias, "Ingresos por Día Semanal");
-    chart_legend_set_position(cDias, LXW_CHART_LEGEND_NONE);
+    worksheet_insert_chart_opt(ws, 28, 1, cGastoCat, &opt_mitad_izq);
 
-    worksheet_insert_chart_opt(ws, 28, 1, cDias, &opt_mitad_izq);
-
-    // GRÁFICO 3
     lxw_chart* cDough = workbook_add_chart(wb, LXW_CHART_DOUGHNUT);
     lxw_chart_series* sP = chart_add_series(cDough, NULL, NULL);
     chart_series_set_categories(sP, "SysData", 0, 7, 1, 7);
@@ -265,7 +243,7 @@ static void dibujarDashboardBI(lxw_workbook* wb, lxw_worksheet* ws, Estilos* e,
 
 // PROCESAMIENTO DINÁMICO DE MESES
 
-static void agruparTransaccionesPorMes(BalanceItem* items, int n, MesAgrupado* arrayMeses, int* numMeses, double* ingresosDia) {
+static void agruparTransaccionesPorMes(BalanceItem* items, int n, MesAgrupado* arrayMeses, int* numMeses) {
     *numMeses = 0;
 
     for (int i = 0; i < n; i++) {
@@ -292,8 +270,6 @@ static void agruparTransaccionesPorMes(BalanceItem* items, int n, MesAgrupado* a
 
         if (strncmp(items[i].tipo, "INGRESO", 7) == 0) {
             arrayMeses[idx].ingresos += items[i].importe;
-            int dia = obtenerDiaSemana(items[i].fecha);
-            ingresosDia[dia] += items[i].importe;
         } else {
             arrayMeses[idx].gastos += items[i].importe;
         }
@@ -306,6 +282,33 @@ static void agruparTransaccionesPorMes(BalanceItem* items, int n, MesAgrupado* a
                 MesAgrupado temp = arrayMeses[i];
                 arrayMeses[i] = arrayMeses[j];
                 arrayMeses[j] = temp;
+            }
+
+        }
+
+    }
+
+}
+
+static void agruparGastosPorCategoria(BalanceItem* items, int n, CategoriaAgrupada* categorias, int* numCategorias) {
+    for (int i = 0; i < n; i++) {
+        if (strncmp(items[i].tipo, "GASTO", 5) == 0) {
+            int idx = -1;
+
+            for (int j = 0; j < *numCategorias; j++) {
+                if (strcmp(categorias[j].id, items[i].id) == 0) {
+                    idx = j;
+                    break;
+                }
+            }
+
+            if (idx == -1) {
+                strncpy(categorias[*numCategorias].id, items[i].id, 63);
+                categorias[*numCategorias].id[63] = '\0';
+                categorias[*numCategorias].total = items[i].importe;
+                (*numCategorias)++;
+            } else {
+                categorias[idx].total += items[i].importe;
             }
         }
     }
@@ -322,27 +325,31 @@ int generarExcelBalance(BalanceItem* items, int n, double totalIngresos, double 
 
     MesAgrupado arrayMeses[120];
     int numMeses = 0;
-    double ingresosDia[7] = {0};
 
-    agruparTransaccionesPorMes(items, n, arrayMeses, &numMeses, ingresosDia);
+    CategoriaAgrupada arrayCategorias[50];
+    int numCategorias = 0;
 
-    // Creamos explícitamente el Dashboard primero
+    agruparTransaccionesPorMes(items, n, arrayMeses, &numMeses);
+    agruparGastosPorCategoria(items, n, arrayCategorias, &numCategorias);
+
     lxw_worksheet* wsDash = workbook_add_worksheet(wb, "Dashboard BI");
-    dibujarDashboardBI(wb, wsDash, &e, totalIngresos, totalGastos, arrayMeses, numMeses, ingresosDia);
+    dibujarDashboardBI(wb, wsDash, &e, totalIngresos, totalGastos, arrayMeses, numMeses, arrayCategorias, numCategorias);
 
     lxw_worksheet* wsDet = workbook_add_worksheet(wb, "Data Cruda");
     worksheet_set_column(wsDet, 0, 0, 15, NULL);
     worksheet_set_column(wsDet, 1, 1, 12, NULL);
-    worksheet_set_column(wsDet, 2, 2, 45, NULL);
-    worksheet_set_column(wsDet, 3, 3, 16, NULL);
+    worksheet_set_column(wsDet, 2, 2, 20, NULL);
+    worksheet_set_column(wsDet, 3, 3, 45, NULL);
+    worksheet_set_column(wsDet, 4, 4, 16, NULL);
 
     worksheet_write_string(wsDet, 0, 0, "FECHA",    e.cabecera);
     worksheet_write_string(wsDet, 0, 1, "TIPO",     e.cabecera);
-    worksheet_write_string(wsDet, 0, 2, "CONCEPTO", e.cabecera);
-    worksheet_write_string(wsDet, 0, 3, "IMPORTE",  e.cabecera);
+    worksheet_write_string(wsDet, 0, 2, "ID",       e.cabecera);
+    worksheet_write_string(wsDet, 0, 3, "CONCEPTO", e.cabecera);
+    worksheet_write_string(wsDet, 0, 4, "IMPORTE",  e.cabecera);
 
     escribirTransacciones(wsDet, &e, items, n, 1);
-    worksheet_autofilter(wsDet, 0, 0, n, 3);
+    worksheet_autofilter(wsDet, 0, 0, n, 4);
     worksheet_freeze_panes(wsDet, 1, 0);
 
     return workbook_close(wb) == LXW_NO_ERROR ? 0 : -1;
@@ -350,8 +357,10 @@ int generarExcelBalance(BalanceItem* items, int n, double totalIngresos, double 
 
 // GENERAR ANUARIO FINANCIERO
 
-int generarAnuarioFinanciero(int ano, char* rutaCsv, char* rutaSalida) {
-    if (!rutaCsv || !rutaSalida) return -1;
+int generarAnuarioFinanciero(int ano, int mesMax, char* rutaCsv, char* rutaSalida) {
+
+	if (!rutaCsv || !rutaSalida || mesMax < 1) return -1;
+	if (mesMax > 12) mesMax = 12;
 
     lxw_workbook* wb = workbook_new(rutaSalida);
     Estilos e = crearEstilos(wb);
@@ -363,14 +372,17 @@ int generarAnuarioFinanciero(int ano, char* rutaCsv, char* rutaSalida) {
 
     MesAgrupado arrayMeses[12];
     int numMeses = 0;
-    double ingresosDia[7]  = {0};
+
+    CategoriaAgrupada arrayCategorias[50];
+    int numCategorias = 0;
+
     double totIngAnual = 0, totGasAnual = 0;
 
-    // Creamos la pestaña Dashboard como la primera, para forzar el foco inicial de forma segura
     lxw_worksheet* wsDash = workbook_add_worksheet(wb, "Dashboard BI");
     worksheet_activate(wsDash);
 
-    for (int mes = 0; mes < 12; mes++) {
+    for (int mes = 0; mes < mesMax; mes++) {
+
         struct tm tIni = {0}, tFin = {0};
         tIni.tm_year = ano - 1900; tIni.tm_mon = mes;     tIni.tm_mday = 1;
         tFin.tm_year = ano - 1900; tFin.tm_mon = mes + 1; tFin.tm_mday = 0;
@@ -388,27 +400,28 @@ int generarAnuarioFinanciero(int ano, char* rutaCsv, char* rutaSalida) {
         lxw_worksheet* ws = workbook_add_worksheet(wb, meses[mes]);
         worksheet_set_column(ws, 0, 0, 15, NULL);
         worksheet_set_column(ws, 1, 1, 12, NULL);
-        worksheet_set_column(ws, 2, 2, 45, NULL);
-        worksheet_set_column(ws, 3, 3, 16, NULL);
+        worksheet_set_column(ws, 2, 2, 20, NULL);
+        worksheet_set_column(ws, 3, 3, 45, NULL);
+        worksheet_set_column(ws, 4, 4, 16, NULL);
 
         worksheet_write_string(ws, 0, 0, "FECHA",    e.cabecera);
         worksheet_write_string(ws, 0, 1, "TIPO",     e.cabecera);
-        worksheet_write_string(ws, 0, 2, "CONCEPTO", e.cabecera);
-        worksheet_write_string(ws, 0, 3, "IMPORTE",  e.cabecera);
+        worksheet_write_string(ws, 0, 2, "ID",       e.cabecera);
+        worksheet_write_string(ws, 0, 3, "CONCEPTO", e.cabecera);
+        worksheet_write_string(ws, 0, 4, "IMPORTE",  e.cabecera);
 
         double totIngMes = 0, totGasMes = 0;
         escribirTransacciones(ws, &e, items, n, 1);
 
-        // Lo calculo inline para que no falle ninguna dependencia externa
         for(int i = 0; i < n; i++) {
             if(strncmp(items[i].tipo, "INGRESO", 7) == 0) {
                 totIngMes += items[i].importe;
-                int dia = obtenerDiaSemana(items[i].fecha);
-                ingresosDia[dia] += items[i].importe;
             } else {
                 totGasMes += items[i].importe;
             }
         }
+
+        agruparGastosPorCategoria(items, n, arrayCategorias, &numCategorias);
         free(items);
 
         arrayMeses[numMeses].year = ano;
@@ -420,21 +433,21 @@ int generarAnuarioFinanciero(int ano, char* rutaCsv, char* rutaSalida) {
         totIngAnual += totIngMes;
         totGasAnual += totGasMes;
 
-        worksheet_autofilter(ws, 0, 0, n, 3);
+        worksheet_autofilter(ws, 0, 0, n, 4);
         worksheet_freeze_panes(ws, 1, 0);
     }
 
-    // Le pasamos el wsDash correcto
-    dibujarDashboardBI(wb, wsDash, &e, totIngAnual, totGasAnual, arrayMeses, numMeses, ingresosDia);
+    dibujarDashboardBI(wb, wsDash, &e, totIngAnual, totGasAnual, arrayMeses, numMeses, arrayCategorias, numCategorias);
 
     return workbook_close(wb) == LXW_NO_ERROR ? 0 : -1;
+
 }
 
 // REGISTRAR TRANSACCIÓN
 
-int registrarTransaccion(const char* rutaCsv, const char* tipo, const char* concepto, double importe) {
+int registrarTransaccion(const char* rutaCsv, const char* tipo, const char* id, const char* concepto, double importe) {
 
-    if (!rutaCsv || !tipo || !concepto) return -1;
+    if (!rutaCsv || !tipo || !id || !concepto) return -1;
 
     FILE* f = fopen(rutaCsv, "a");
     if (!f) return -1;
@@ -444,7 +457,8 @@ int registrarTransaccion(const char* rutaCsv, const char* tipo, const char* conc
     char timestamp[32];
     strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", tm);
 
-    fprintf(f, "%s;%s;%s;%.2f\n", timestamp, tipo, concepto, importe);
+    // Formato: TIMESTAMP;TIPO;ID;CONCEPTO;IMPORTE
+    fprintf(f, "%s;%s;%s;%s;%.2f\n", timestamp, tipo, id, concepto, importe);
     fclose(f);
     return 0;
 

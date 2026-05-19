@@ -204,10 +204,11 @@ BalanceItem* getBalance(char* rutaCsv, time_t fIni, time_t fFin, int* n) {
         // Extraemos campos sin necesidad de crear arrays dinámicos (mallocs) extra
         char* c_fecha = strtok(tmp, ";");
         char* c_tipo = strtok(NULL, ";");
+        char* c_id = strtok(NULL, ";");
         char* c_concepto = strtok(NULL, ";");
         char* c_importe = strtok(NULL, ";");
 
-        if (!c_fecha || !c_tipo || !c_concepto || !c_importe) continue;
+        if (!c_fecha || !c_tipo || !c_id || !c_concepto || !c_importe) continue;
 
         struct tm tm = {0};
         if (sscanf(c_fecha, "%d-%d-%d", &tm.tm_year, &tm.tm_mon, &tm.tm_mday) == 3) {
@@ -222,6 +223,7 @@ BalanceItem* getBalance(char* rutaCsv, time_t fIni, time_t fFin, int* n) {
                 strncpy(items[i].fecha, c_fecha, 10);
 
                 strncpy(items[i].tipo, c_tipo, sizeof(items[i].tipo) - 1);
+                strncpy(items[i].id, c_id, sizeof(items[i].id) - 1);
                 strncpy(items[i].concepto, c_concepto, sizeof(items[i].concepto) - 1);
                 items[i].importe = atof(c_importe);
                 i++;

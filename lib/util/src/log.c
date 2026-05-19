@@ -98,4 +98,6 @@ void logEscribir(LogNivel nivel, const char* fichero, int linea, const char* fmt
 
     fprintf(g_logFile, "\n");
 
+    fflush(g_logFile);
+
 }

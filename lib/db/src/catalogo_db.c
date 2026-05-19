@@ -1,28 +1,41 @@
-#include "productos_db.h"
+#include "catalogo_db.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <utils_ui.h>
 
-#define ITEMS_POR_PAGINA 15
+// FILTROS
 
-// AUXILIARES INTERNAS
+FiltrosProducto filtrosVacios() {
+
+    FiltrosProducto f;
+    memset(f.nombre, 0, sizeof(f.nombre));
+    f.idCategoria = -1;
+    f.precioMin   = -1;
+    f.precioMax   = -1;
+    f.idAlm       = -1;
+    return f;
+
+}
+
+// AUXILIARES
 
 // Rellena un Producto a partir de un sqlite3_stmt posicionado en una fila.
 // Columnas esperadas: ID_PR, NOM_PR, DESCRIP_PR, PRECIO_PR, DESCTO_PR, ID_CAT, NOM_CAT
 
-static Producto productoDB(sqlite3_stmt* stmt) {
+Producto productoDB(sqlite3_stmt* pstmt) {
 
     Producto p = {0};
-    p.id               = sqlite3_column_int(stmt, 0);
-    p.nombre           = strdup((char*)sqlite3_column_text(stmt, 1));
-    p.descripcion      = sqlite3_column_text(stmt, 2) ? strdup((char*)sqlite3_column_text(stmt, 2)) : NULL;
-    p.precio           = sqlite3_column_double(stmt, 3);
-    p.descuento        = sqlite3_column_double(stmt, 4);
-    p.categoria.id     = sqlite3_column_int(stmt, 5);
-    p.categoria.nombre = strdup((char*)sqlite3_column_text(stmt, 6));
+    p.id               = sqlite3_column_int(pstmt, 0);
+    p.nombre           = strdup((char*)sqlite3_column_text(pstmt, 1));
+    p.descripcion      = sqlite3_column_text(pstmt, 2) ? strdup((char*)sqlite3_column_text(pstmt, 2)) : NULL;
+    p.precio           = sqlite3_column_double(pstmt, 3);
+    p.descuento        = sqlite3_column_double(pstmt, 4);
+    p.categoria.id     = sqlite3_column_int(pstmt, 5);
+    p.categoria.nombre = strdup((char*)sqlite3_column_text(pstmt, 6));
 
     // Parseamos las variantes de la categoría
-    char* variantesRaw = (char*)sqlite3_column_text(stmt, 7);
+    char* variantesRaw = (char*)sqlite3_column_text(pstmt, 7);
 
     if (variantesRaw && strlen(variantesRaw) > 0 && strcmp(variantesRaw, "UNICA") != 0) {
 
@@ -50,9 +63,9 @@ static Producto productoDB(sqlite3_stmt* stmt) {
     } else {
 
         // UNICA o sin variantes
-        p.categoria.variantes    = malloc(sizeof(char*));
+        p.categoria.variantes = malloc(sizeof(char*));
         p.categoria.variantes[0] = strdup("UNICA");
-        p.categoria.nVariantes   = 1;
+        p.categoria.nVariantes = 1;
 
     }
 
@@ -68,20 +81,6 @@ void liberarProducto(Producto* p) {
     free(p->categoria.nombre);
     for (int i = 0; i < p->categoria.nVariantes; i++) free(p->categoria.variantes[i]);
     free(p->categoria.variantes);
-
-}
-
-// FILTROS
-
-FiltrosProducto filtrosVacios() {
-
-    FiltrosProducto f;
-    memset(f.nombre, 0, sizeof(f.nombre));
-    f.idCategoria = -1;
-    f.precioMin   = -1;
-    f.precioMax   = -1;
-    f.idAlm       = -1;
-    return f;
 
 }
 
@@ -115,45 +114,34 @@ void getEstadoSistema(sqlite3* db, int* catalogo, int* redLogis, int* pedidosPen
 
 }
 
-
 Producto* buscarProductos(sqlite3* db, FiltrosProducto f, int pagina, int* total) {
 
     if (!db || !total) return NULL;
-
-    // Construimos la WHERE dinámica
 
     char where[512] = "WHERE 1=1";
 
     if (strlen(f.nombre) > 0) {
 
-        char tmp[300];
-        snprintf(tmp, sizeof(tmp), " AND P.NOM_PR LIKE '%%%s%%'", f.nombre);
-        strncat(where, tmp, sizeof(where) - strlen(where) - 1);
+        strncat(where, " AND P.NOM_PR LIKE '%' || ? || '%'", sizeof(where) - strlen(where) - 1);
 
     }
 
     if (f.idCategoria != -1) {
-
         char tmp[64];
         snprintf(tmp, sizeof(tmp), " AND P.ID_CAT = %d", f.idCategoria);
         strncat(where, tmp, sizeof(where) - strlen(where) - 1);
-
     }
 
     if (f.precioMin >= 0) {
-
         char tmp[64];
-        snprintf(tmp, sizeof(tmp), " AND P.PRECIO_PR >= %.2f", f.precioMin);
+        snprintf(tmp, sizeof(tmp), " AND ROUND(P.PRECIO_PR * (1.0 - P.DESCTO_PR), 2) >= %.2f ", f.precioMin);
         strncat(where, tmp, sizeof(where) - strlen(where) - 1);
-
     }
 
     if (f.precioMax >= 0) {
-
         char tmp[64];
-        snprintf(tmp, sizeof(tmp), " AND P.PRECIO_PR <= %.2f", f.precioMax);
+        snprintf(tmp, sizeof(tmp), " AND ROUND(P.PRECIO_PR * (1.0 - P.DESCTO_PR), 2) <= %.2f", f.precioMax);
         strncat(where, tmp, sizeof(where) - strlen(where) - 1);
-
     }
 
     if (f.idAlm != -1) {
@@ -165,8 +153,6 @@ Producto* buscarProductos(sqlite3* db, FiltrosProducto f, int pagina, int* total
         strncat(where, tmp, sizeof(where) - strlen(where) - 1);
     }
 
-    // COUNT total
-
     char sqlCount[1024];
     snprintf(sqlCount, sizeof(sqlCount),
         "SELECT COUNT(*) FROM PRODUCTO P "
@@ -174,14 +160,21 @@ Producto* buscarProductos(sqlite3* db, FiltrosProducto f, int pagina, int* total
 
     sqlite3_stmt* pstmtCount;
     *total = 0;
+
     if (sqlite3_prepare_v2(db, sqlCount, -1, &pstmtCount, NULL) == SQLITE_OK) {
-        if (sqlite3_step(pstmtCount) == SQLITE_ROW) *total = sqlite3_column_int(pstmtCount, 0);
+
+        int bindIdx = 1;
+        if (strlen(f.nombre) > 0) {
+            sqlite3_bind_text(pstmtCount, bindIdx++, f.nombre, -1, SQLITE_STATIC);
+        }
+
+        if (sqlite3_step(pstmtCount) == SQLITE_ROW) {
+            *total = sqlite3_column_int(pstmtCount, 0);
+        }
         sqlite3_finalize(pstmtCount);
     }
 
     if (*total == 0) return NULL;
-
-    // SELECT paginado
 
     int offset = (pagina - 1) * ITEMS_POR_PAGINA;
     if (offset < 0) offset = 0;
@@ -199,6 +192,9 @@ Producto* buscarProductos(sqlite3* db, FiltrosProducto f, int pagina, int* total
 
     sqlite3_stmt* pstmtSelect;
     if (sqlite3_prepare_v2(db, sql, -1, &pstmtSelect, NULL) != SQLITE_OK) return NULL;
+
+    int bindIdx = 1;
+    if (strlen(f.nombre) > 0) sqlite3_bind_text(pstmtSelect, bindIdx++, f.nombre, -1, SQLITE_STATIC);
 
     Producto* resultado = malloc(sizeof(Producto) * ITEMS_POR_PAGINA);
     int n = 0;
@@ -339,7 +335,7 @@ int eliminarProducto(sqlite3* db, int idProd, int idAlm) {
     char sql[512];
 
     if (idAlm == -1) strncpy(sql, "DELETE FROM PRODUCTO WHERE ID_PR = ?", sizeof(sql));
-    else strncpy(sql, "DELETE FROM STOCK_ALMACEN WHERE ID_PR = ? AND ID_ALM = ?", sizeof(sql));
+    else strncpy(sql, "DELETE FROM STOCK_ALMACEN WHERE ID_PR = ? AND ID_ALM = ? AND DISPONIBLE = 1", sizeof(sql));
 
     if (sqlite3_prepare_v2(db, sql, -1, &pstmt, NULL) != SQLITE_OK) return -1;
 
@@ -397,7 +393,7 @@ Categoria* getCategorias(sqlite3* db, int* n) {
 void filtrarVariantesConStockEnAlm(sqlite3* db, Producto* p, int idAlm) {
 
 	sqlite3_stmt* pstmt;
-	char *sql = "SELECT COALESCE(SUM(CANT), 0) FROM STOCK_ALMACEN WHERE ID_ALM = ? AND ID_PR = ? AND VARIANTE = ?";
+	char *sql = "SELECT COALESCE(SUM(CANT), 0) FROM STOCK_ALMACEN WHERE ID_ALM = ? AND ID_PR = ? AND VARIANTE = ? AND DISPONIBLE = 1";
 
 	if (sqlite3_prepare_v2(db, sql, -1, &pstmt, NULL) != SQLITE_OK) return;
 

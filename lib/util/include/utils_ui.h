@@ -44,9 +44,12 @@
 // CONSTANTES DE LAYOUT
 
 #define ANCHO_PANTALLA      116
-#define ITEMS_POR_PAGINA    15
+#define ITEMS_POR_PAGINA    20
 #define CATS_POR_PAGINA     20
-#define ALMS_POR_PAGINA     15
+#define ALMS_POR_PAGINA     20
+#define ALMS_SEL_POR_PAGINA 20
+#define RESENAS_POR_PAGINA  20
+#define PEDIDOS_POR_PAGINA  20
 
 // TECLAS ESPECIALES
 
@@ -91,6 +94,11 @@ void wordWrap(char* nuevo, char* texto, int padding);
 
 // FUNCIONES DE LAYOUT
 
+char* getLinea(char c, int ancho);  // línea de separación
+char* getCentrado(char* texto, int ancho);
+char* getCabecera(char* titulo, char* subtitulo); // cabecera de pantalla con logo
+char* getSeccion(char* titulo);     // separador de sección interno
+char* getDuracion(time_t segundos);
 void imprimirLinea(char c, int ancho);  // línea de separación
 void imprimirCentrado(char* texto, int ancho);
 void imprimirCabecera(char* titulo, char* subtitulo); // cabecera de pantalla con logo
@@ -99,6 +107,10 @@ void imprimirDuracion(time_t segundos);
 
 // FUNCIONES DE FEEDBACK
 
+char* getExito(char* msg);
+char* getError(char* msg);
+char* getWarn(char* msg);
+char* getInfo(char* msg);
 void imprimirExito(char* msg);
 void imprimirError(char* msg);
 void imprimirWarn(char* msg);
@@ -106,6 +118,10 @@ void imprimirInfo(char* msg);
 
 // FUNCIONES DE TABLAS
 
+char* getCabeceraTabla(Columna* cols, int nCols);
+char* getFilaTabla(char** valores, Columna* cols, int nCols, int esImpar);
+char* getPieTabla(Columna* cols, int nCols);
+char* getPaginacion(int pagActual, int totalPags, int totalItems);
 void imprimirCabeceraTabla(Columna* cols, int nCols);
 void imprimirFilaTabla(char** valores, Columna* cols, int nCols, int esImpar);
 void imprimirPieTabla(Columna* cols, int nCols);
@@ -123,6 +139,7 @@ Entrada leerComando(char** opciones, int nOpciones, char* prompt);
 int leerEntero(char* prompt, int min, int max);
 double leerDouble(char* prompt, double min, double max);
 void leerTexto(char* prompt, char* buffer, int maxLen);
+void leerContrasena(char* prompt, char* buffer, int maxLen);
 int confirmar(char* msg);            // devuelve 1 si S, 0 si N
 
 #endif /* INCLUDE_UI_UTILS_H_ */

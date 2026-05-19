@@ -1,25 +1,13 @@
 #include "sqlite3.h"
 #include "logistica.h"
+#include "config.h"
 #include "log.h"
+#include "usuario_db.h"
 #include "almacenes_db.h"
 #include "estructuras.h"
 #include <math.h>
 #include <time.h>
 #include <stdlib.h>
-
-#define RADIO_TIERRA_KM          6371.0
-#define DEG_A_RAD(x)             ((x) * M_PI / 180.0)
-
-#define VEL_MEDIA_KMH            75.0
-#define CAPACIDAD_VEHICULO       25000.0
-#define COSTE_KM_VEHICULO        1.4
-#define COSTE_MIN_TRASVASE       150.0
-#define HORAS_MIN_TRASVASE       2.0
-
-#define COSTE_MANIPULACION_UND   0.05
-#define MARGEN_GANANCIAS         0.5
-#define HORAS_PREPARACION_EXT    8.0
-#define DIAS_TRANSITO_EXT        2
 
 // HAVERSINE
 
@@ -31,7 +19,7 @@ double calcularDistancia(Ubicacion u1, Ubicacion u2) {
 
     double a = sin(dLat / 2) * sin(dLat / 2) + cos(lat1) * cos(lat2) * sin(dLon / 2) * sin(dLon / 2);
 
-    return RADIO_TIERRA_KM * 2.0 * asin(sqrt(a));
+    return RADIO_TIERRA_KM * 2.0 * asin(sqrt(a)) * 1.2;
 }
 
 // COSTE TRASVASE ENTRE ALMACENES
@@ -60,6 +48,30 @@ void calcularCosteTrasvase(Ubicacion ubi1, Ubicacion ubi2, int cant, double* pre
     double horasTotal = horasCond + horasCarga;
     if (horasTotal < HORAS_MIN_TRASVASE) horasTotal = HORAS_MIN_TRASVASE;
 
+    *duracion = (time_t)(horasTotal * 3600.0);
+
+}
+
+// COSTE PAQUETERÍA
+
+// precio  = COSTE_BASE_PAQUETERIA + (max(0, cant - 1) * COSTE_EXTRA_ARTICULO) + (dist_km * COSTE_KM_PAQUETERIA)
+// tiempo  = HORAS_PROCESADO_PEDIDO + (dist_km / VEL_MEDIA_RED_LOGISTICA)
+void calcularCostePaqueteria(Ubicacion origen, Ubicacion destino, int cant, double* precio, time_t* duracion) {
+
+    if (!precio || !duracion) return;
+
+    double dist = calcularDistancia(origen, destino);
+
+    // Cobramos el extra de manipulación/peso a partir del segundo artículo
+    int articulosExtra = (cant > 1) ? (cant - 1) : 0;
+
+    *precio = COSTE_BASE_PAQUETERIA + (articulosExtra * COSTE_EXTRA_ARTICULO) + (dist * COSTE_KM_PAQUETERIA);
+
+    // Tiempo en almacén + tiempo viajando por la red de transporte
+    double horasTransito = dist / VEL_MEDIA_RED_LOGISTICA;
+    double horasTotal = HORAS_PROCESADO_PEDIDO + horasTransito;
+
+    // Convertimos las horas totales a segundos para el time_t
     *duracion = (time_t)(horasTotal * 3600.0);
 
 }
@@ -303,5 +315,160 @@ void calcularCosteCierreAlmacen(sqlite3* db, int idAlm, double* precio, time_t* 
     free(aElim->nombre);
     free(aElim->ubicacion.direccion);
     free(aElim);
+
+}
+
+void calcularCosteEnvio(sqlite3* db, const char* correo, int idUbicacion, double* precio, time_t* duracion) {
+
+    if (!precio || !duracion || !db || !correo) return;
+
+    *precio = 0.0;
+    *duracion = 0;
+
+    int nItems = 0;
+    ItemCarrito* carrito = getCarrito(db, correo, &nItems);
+    if (!carrito || nItems == 0) return; // Nada en el carrito
+
+    Ubicacion* ubDestino = getUbicacionPorId(db, idUbicacion);
+    if (!ubDestino) {
+        for(int i=0; i<nItems; i++) { free(carrito[i].nombreProducto); free(carrito[i].variante); }
+        free(carrito);
+        return;
+    }
+
+    int nAlm = 0;
+    Almacen* almacenes = getAlmacenes(db, &nAlm);
+    if (!almacenes || nAlm == 0) {
+        liberarUbicacion(ubDestino);
+        for(int i=0; i<nItems; i++) { free(carrito[i].nombreProducto); free(carrito[i].variante); }
+        free(carrito);
+        return;
+    }
+
+    AlmCandidato* candidatos = malloc(sizeof(AlmCandidato) * nAlm);
+    for (int i = 0; i < nAlm; i++) {
+        candidatos[i].alm = &almacenes[i];
+        candidatos[i].distancia = calcularDistancia(*ubDestino, almacenes[i].ubicacion);
+        candidatos[i].cantAEnviar = 0;
+    }
+
+    // Ordenamos por distancia (del más cercano al más lejano)
+    qsort(candidatos, nAlm, sizeof(AlmCandidato), cmpCandidatos);
+
+    sqlite3_stmt* pstmtCheckStock = NULL;
+    char* sqlCheck = "SELECT CANT FROM STOCK_ALMACEN WHERE ID_ALM = ? AND ID_PR = ? AND VARIANTE = ? AND DISPONIBLE = 1";
+
+    if (sqlite3_prepare_v2(db, sqlCheck, -1, &pstmtCheckStock, NULL) != SQLITE_OK) {
+        goto error_limpieza;
+    }
+
+    int stockSuficiente = 1;
+
+    for (int i = 0; i < nItems; i++) {
+
+        int cantRestante = carrito[i].cantidad;
+
+        for (int j = 0; j < nAlm && cantRestante > 0; j++) {
+
+            sqlite3_bind_int(pstmtCheckStock, 1, candidatos[j].alm->id);
+            sqlite3_bind_int(pstmtCheckStock, 2, carrito[i].id);
+            sqlite3_bind_text(pstmtCheckStock, 3, carrito[i].variante, -1, SQLITE_STATIC);
+
+            int stockDisponible = 0;
+            if (sqlite3_step(pstmtCheckStock) == SQLITE_ROW) {
+                stockDisponible = sqlite3_column_int(pstmtCheckStock, 0);
+            }
+            sqlite3_reset(pstmtCheckStock);
+
+            if (stockDisponible > 0) {
+
+                int aTomar = (stockDisponible >= cantRestante) ? cantRestante : stockDisponible;
+
+                // Acumulamos cuántos productos enviará este almacén en total
+                candidatos[j].cantAEnviar += aTomar;
+                cantRestante -= aTomar;
+
+            }
+
+        }
+
+        if (cantRestante > 0) {
+            stockSuficiente = 0;
+            break; // No hay stock para este producto
+        }
+
+    }
+
+    sqlite3_finalize(pstmtCheckStock);
+
+    if (stockSuficiente) {
+
+        for (int i = 0; i < nAlm; i++) {
+
+            if (candidatos[i].cantAEnviar > 0) {
+
+                double costeOrigen = 0.0;
+                time_t durOrigen = 0;
+
+                calcularCostePaqueteria(candidatos[i].alm->ubicacion, *ubDestino, candidatos[i].cantAEnviar, &costeOrigen, &durOrigen);
+                *precio += costeOrigen;
+
+                // El envío total tarda lo que tarde el almacén más lento en llegar
+                if (durOrigen > *duracion) {
+                    *duracion = durOrigen;
+                }
+
+            }
+
+        }
+
+    } else {
+        // Si no hay stock, marcamos con -1 para que la capa superior lo gestione
+        *precio = -1.0;
+    }
+
+error_limpieza:
+    // Liberación de toda la memoria alojada dinámicamente
+    free(candidatos);
+    liberarUbicacion(ubDestino);
+
+    for(int i = 0; i < nAlm; i++) {
+        free(almacenes[i].nombre);
+        free(almacenes[i].ubicacion.direccion);
+    }
+    free(almacenes);
+
+    for(int i = 0; i < nItems; i++) {
+        free(carrito[i].nombreProducto);
+        free(carrito[i].variante);
+    }
+    free(carrito);
+}
+
+// GESTION DE FICHERO MOVIMIENTOS
+
+#ifndef CONFIG_PATH
+#define CONFIG_PATH "../data/config/server_config.ini"
+#endif
+
+void registrarAccion(time_t timestamp, const char* tipo, const char* datosRestantes) {
+
+	char csvPath[256];
+	configGet(CONFIG_PATH, "ACCIONES_PENDIENTES_PATH", csvPath, sizeof(csvPath));
+
+    HANDLE hMutex = CreateMutexA(NULL, FALSE, "Global\\DeustoCommerce_CSV_Mutex");
+    if (hMutex == NULL) return;
+
+    // Esperamos a que esté libre (bloquea a cualquier otro hilo o programa)
+    WaitForSingleObject(hMutex, INFINITE);
+
+    FILE* file = fopen(csvPath, "a");
+    if (file != NULL) {
+        fprintf(file, "%lld;%s;%s\n", timestamp, tipo, datosRestantes);
+        fclose(file);
+    }
+
+    ReleaseMutex(hMutex);
+    CloseHandle(hMutex);
 
 }

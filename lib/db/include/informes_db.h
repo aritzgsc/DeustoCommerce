@@ -32,6 +32,7 @@ typedef struct {
 
     char fecha[16];      // "YYYY-MM-DD"
     char tipo[32];       // "INGRESO" o "GASTO"
+    char id[32];
     char concepto[256];
     double importe;
 

@@ -14,6 +14,7 @@
 #define COLOR_WHITE         0xFFFFFF
 #define COLOR_TEXT_MUTED    0x64748B
 
+
 // ESTRUCTURAS AUXILIARES
 
 typedef struct {
@@ -37,6 +38,11 @@ typedef struct {
     double gastos;
 } MesAgrupado;
 
+typedef struct {
+    char id[64];
+    double total;
+} CategoriaAgrupada;
+
 // GENERACIÓN DE EXCEL CON LIBXLSXWRITER
 
 // Genera un informe de balance en formato .xlsx.
@@ -51,7 +57,7 @@ int generarExcelBalance(BalanceItem* items, int n, double totalIngresos, double 
 // rutaCsv: ruta al reg_financiero.csv.
 // rutaSalida: ruta del .xlsx a generar.
 // Devuelve 0 si OK.
-int generarAnuarioFinanciero(int ano, char* rutaCsv, char* rutaSalida);
+int generarAnuarioFinanciero(int ano, int mesMax, char* rutaCsv, char* rutaSalida);
 
 // Registra una transacción en reg_financiero.csv.
 // tipo: "INGRESO" o "GASTO"
@@ -59,6 +65,6 @@ int generarAnuarioFinanciero(int ano, char* rutaCsv, char* rutaSalida);
 // importe: cantidad en euros
 // rutaCsv: ruta al fichero
 // Devuelve 0 si OK.
-int registrarTransaccion(const char* rutaCsv, const char* tipo, const char* concepto, double importe);
+int registrarTransaccion(const char* rutaCsv, const char* tipo, const char* id, const char* concepto, double importe);
 
 #endif /* UTIL_INCLUDE_FINANZAS_H_ */

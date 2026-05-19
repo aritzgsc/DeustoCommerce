@@ -1,5 +1,5 @@
-#ifndef DB_INCLUDE_PRODUCTOS_DB_H_
-#define DB_INCLUDE_PRODUCTOS_DB_H_
+#ifndef DB_INCLUDE_CATALOGO_DB_H_
+#define DB_INCLUDE_CATALOGO_DB_H_
 
 #include "sqlite3.h"
 #include "estructuras.h"
@@ -17,6 +17,9 @@ typedef struct {
 // Inicializa un FiltrosProducto sin ningún filtro activo
 FiltrosProducto filtrosVacios();
 
+// AUXILIARES
+
+Producto productoDB(sqlite3_stmt* pstmt);
 void liberarProducto(Producto* p);
 
 // CONSULTAS
@@ -61,4 +64,4 @@ Categoria* getCategorias(sqlite3* db, int* n);
 // Actualiza las variantes disponibles en el almacén de la categoría producto.
 void filtrarVariantesConStockEnAlm(sqlite3* db, Producto* p, int idAlm);
 
-#endif /* DB_INCLUDE_PRODUCTOS_DB_H_ */
+#endif /* DB_INCLUDE_CATALOGO_DB_H_ */
