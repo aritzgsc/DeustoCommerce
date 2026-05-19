@@ -1,5 +1,5 @@
-#ifndef INCLUDE_UI_ALMACENES_H_
-#define INCLUDE_UI_ALMACENES_H_
+#ifndef INCLUDE_ALMACENES_UI_H_
+#define INCLUDE_ALMACENES_UI_H_
 
 #include "sqlite3.h"
 
@@ -24,4 +24,4 @@ void pantallaRestock(sqlite3* db, int idAlm);
 // Confirmación y cierre de almacén con reubicación de stock
 void pantallaEliminarAlmacen(sqlite3* db, int idAlm);
 
-#endif /* INCLUDE_UI_ALMACENES_H_ */
+#endif /* INCLUDE_ALMACENES_UI_H_ */

@@ -34,11 +34,13 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/lib/third_party/libxlsxwriter/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/lib/third_party/libxlsxwriter/include/xlsxwriter}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/lib/third_party/libxlsxwriter/include/xlsxwriter/third_party}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/lib/third_party/libcurl/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/lib/third_party/sqlite3}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/lib/third_party/zlib}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/lib/util/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/lib/db/include}&quot;"/>
 								</option>
+								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="true" id="gnu.c.compiler.option.preprocessor.def.symbols.100653291" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" useByScannerDiscovery="false" valueType="definedSymbols"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.190847578" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.mingw.exe.debug.1406075915" name="MinGW C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.mingw.exe.debug">
@@ -50,6 +52,8 @@
 									<listOptionValue builtIn="false" value="lib"/>
 									<listOptionValue builtIn="false" value="curl"/>
 								</option>
+								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="true" id="gnu.c.link.option.other.1776191062" name="Other options (-Xlinker [option])" superClass="gnu.c.link.option.other" valueType="stringList"/>
+								<option id="gnu.c.link.option.ldflags.1860071449" name="Linker flags" superClass="gnu.c.link.option.ldflags" value="-Xlinker --allow-multiple-definition" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.linker.input.1172505486" superClass="cdt.managedbuild.tool.gnu.c.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>

@@ -1,7 +1,6 @@
-#include "ui_admin.h"
-#include "ui_almacenes.h"
-#include "ui_utils.h"
-#include "ui_catalogo.h"
+#include <admin_ui.h>
+#include <almacenes_ui.h>
+#include <catalogo_ui.h>
 #include "logistica.h"
 #include "finanzas.h"
 #include "almacenes_db.h"
@@ -12,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <utils_ui.h>
 
 // AUXILIARES INTERNAS
 
@@ -42,9 +42,9 @@ static void imprimirBarraOcupacion(int ocupacion, int capacidad) {
 static Columna colsSelAlm[] = {
 
 	{ "  ID  ", 6,  1 },
-	{ "               NOMBRE               ", 36, 0 },
+	{ "                       NOMBRE                       ", 52, 0 },
 	{ "   OCUPACION   ", 15, 1 },
-	{ " CAP. MAX ", 10, 1 },
+	{ "         CAP. MAX         ", 26, 2 },
 
 };
 #define N_COLS_SEL_ALM 4
@@ -56,8 +56,6 @@ static char* cmdsSelAlm[] = {
 };
 
 #define N_CMDS_SEL_ALM 4
-
-#define ALMS_SEL_POR_PAGINA 15
 
 int seleccionarAlmacen(sqlite3* db, int excluirId) {
 
@@ -81,6 +79,7 @@ int seleccionarAlmacen(sqlite3* db, int excluirId) {
         imprimirCabecera("SELECCIONAR ALMACEN", "Elige el almacen destino");
 
         if (nFilt == 0) {
+        	printf("\033[A");
             imprimirWarn("No hay otros almacenes disponibles.");
             free(filtrados);
             liberarAlmacenes(almacenes, nAlm);
@@ -96,12 +95,12 @@ int seleccionarAlmacen(sqlite3* db, int excluirId) {
             Almacen* a = filtrados[i];
             int ocup = getOcupacionAlmacen(db, a->id);
 
-            char idStr[8], capStr[12];
+            char idStr[7], capStr[27];
             snprintf(idStr, sizeof(idStr), "%d", a->id);
             snprintf(capStr, sizeof(capStr), "%d", a->capacidad);
 
-            char nombre[37];
-            strncpy(nombre, a->nombre, 36); nombre[36] = '\0';
+            char nombre[53];
+            strncpy(nombre, a->nombre, 52); nombre[52] = '\0';
 
             char ocupStr[256] = "";
             double pct = a->capacidad > 0 ? (double)ocup / a->capacidad : 0;
@@ -238,6 +237,7 @@ void pantallaAlmacenes(sqlite3* db) {
 
         if (!almacenes || nAlm == 0) {
 
+        	printf("\033[A");
             imprimirWarn("No hay almacenes registrados.");
 
         } else {
@@ -367,11 +367,11 @@ void pantallaAlmacenes(sqlite3* db) {
 
 static Columna colsStock[] = {
 
-    { "ID PROD", 7,  1 },
-    { "             NOMBRE             ", 32, 0 },
-    { "  VARIANTE  ", 12, 0 },
+    { "  ID  ", 6,  1 },
+    { "                       NOMBRE                       ", 52, 0 },
+    { "  VARIANTE  ", 12, 2 },
     { "CANTIDAD", 8, 1 },
-    { "    ESTADO    ", 14, 1 },
+    { "      ESTADO      ", 18, 1 },
 
 };
 
@@ -379,7 +379,7 @@ static Columna colsStock[] = {
 
 static char* cmdsVerAlmacen[] = {
 
-    "VER_PROD", "ADD_STOCK", "MOVER_STOCK", "RESTOCK", "ELIMINAR", "ANTERIOR", "SIGUIENTE", "VOLVER", "HOME", "EXIT",
+    "VER_PROD", "ADD_STOCK", "MOVER_STOCK", "RESTOCK", "ELIMINAR", "ANTERIOR", "SIGUIENTE", "VOLVER", "HOME", "EXIT"
 
 };
 
@@ -429,13 +429,13 @@ int pantallaVerAlmacen(sqlite3* db, int idAlm) {
             int n = total < ITEMS_POR_PAGINA ? total : ITEMS_POR_PAGINA;
             for (int i = 0; i < n; i++) {
 
-                char idStr[10], cantStr[10];
+                char idStr[7], cantStr[9];
                 snprintf(idStr, sizeof(idStr), "%d", a->productos[i].producto.id);
                 snprintf(cantStr, sizeof(cantStr), "%d", a->productos[i].cantidad);
 
-                char nombre[33];
-                strncpy(nombre, a->productos[i].producto.nombre, 32);
-                nombre[32] = '\0';
+                char nombre[53];
+                strncpy(nombre, a->productos[i].producto.nombre, 52);
+                nombre[52] = '\0';
 
                 char* estado = a->productos[i].disponible ? "✔   Disponible" : "✖   No disponible";
 
@@ -583,6 +583,9 @@ void pantallaNuevoAlmacen(sqlite3* db) {
         pausar();
 
     }
+
+    liberarUbicacionApi(&a.ubicacion);
+
 }
 
 // ADD STOCK
@@ -597,6 +600,7 @@ void pantallaAddStock(sqlite3* db, int idAlm) {
     int ocupacion = getOcupacionAlmacen(db, a->id);
 
     if (ocupacion >= a->capacidad) {
+    	printf("\033[A");
     	imprimirWarn("El almacén ya está lleno");
     	LOG_WARN("Adición de stock imposible en #%d | %s, %s || Almacén lleno", a->id, a->ubicacion.ciudad.nombre, a->ubicacion.ciudad.pais.nombre);
     	pausar();
@@ -675,9 +679,10 @@ void pantallaAddStock(sqlite3* db, int idAlm) {
     printf("  " ESTILO_SUBTITULO "Cantidad:  " RESET C_BLANCO "%d uds.\n"  RESET, cant);
     printf("  " ESTILO_SUBTITULO "Coste est: " RESET ESTILO_PRECIO "%.2f € ; " RESET, coste); imprimirDuracion(duracion); printf(RESET);
 
+    time_t timestampEjecucion = time(NULL) + duracion;
 
     if (confirmar("Confirmar entrada de stock?")) {
-        if (addStock(db, idAlm, idProd, variante, cant) == 0) {
+        if (addStock(db, idAlm, idProd, variante, cant, timestampEjecucion) == 0) {
 
             char msg[64];
             snprintf(msg, sizeof(msg), "%d unidades añadidas correctamente.", cant);
@@ -689,7 +694,7 @@ void pantallaAddStock(sqlite3* db, int idAlm) {
 
             char concepto[512];
             snprintf(concepto, sizeof(concepto), "Stock añadido: #%d — %s || %d uds. => #%d | %s, %s", p->id, p->nombre, cant, a->id, a->ubicacion.ciudad.nombre, a->ubicacion.ciudad.pais.nombre);
-            registrarTransaccion(regFinancieroPath, "GASTO", concepto, coste);
+            registrarTransaccion(regFinancieroPath, "GASTO", "COMPRA_PROVEEDOR", concepto, coste);
 
         } else {
 
@@ -804,7 +809,9 @@ void pantallaMoverStock(sqlite3* db, int idAlm) {
 
     if (confirmar("Confirmar trasvase?")) {
 
-        int cod = moverStock(db, idAlm, idDestino, idProd, variante, cant);
+    	time_t timestampEjecucion = time(NULL) + duracion;
+
+        int cod = moverStock(db, idAlm, idDestino, idProd, variante, cant, timestampEjecucion);
         if (cod == 0) {
 
             imprimirExito("Stock trasvasado correctamente.");
@@ -815,7 +822,7 @@ void pantallaMoverStock(sqlite3* db, int idAlm) {
 
             char concepto[512];
             snprintf(concepto, sizeof(concepto), "Stock trasvasado: #%d | %s, %s -> #%d | %s, %s || %d unidades de #%d — %s", orig->id, orig->ubicacion.ciudad.nombre, orig->ubicacion.ciudad.pais.nombre, dest->id, dest->ubicacion.ciudad.nombre, dest->ubicacion.ciudad.pais.nombre, cant, p->id, p->nombre);
-            registrarTransaccion(regFinancieroPath, "GASTO", concepto, coste);
+            registrarTransaccion(regFinancieroPath, "GASTO", "TRASVASE_INTERNO", concepto, coste);
 
         } else if (cod == -10) {
 
@@ -849,6 +856,7 @@ void pantallaRestock(sqlite3* db, int idAlm) {
     Almacen* a = getAlmacenPorId(db, idAlm);
     if (!a) {
 
+    	printf("\033[A");
     	imprimirError("Almacén no encontrado.");
     	LOG_ERROR("Restock de almacén cancelada: Almacén #%d no encontrado", idAlm);
     	pausar();
@@ -886,7 +894,9 @@ void pantallaRestock(sqlite3* db, int idAlm) {
 
     if (confirmar("¿Ejecutar restock automático?")) {
 
-        int anadido = restock(db, idAlm, &coste);
+    	time_t timestampEjecucion = time(NULL) + duracion;
+
+        int anadido = restock(db, idAlm, &coste, timestampEjecucion);
         if (anadido >= 0) {
 
             char msg[64];
@@ -899,7 +909,7 @@ void pantallaRestock(sqlite3* db, int idAlm) {
 
             char concepto[512];
             snprintf(concepto, sizeof(concepto), "Restock completado: #%d — %s, %s || %d unidades añadidas", a->id, a->ubicacion.ciudad.nombre, a->ubicacion.ciudad.pais.nombre, anadido);
-            registrarTransaccion(regFinancieroPath, "GASTO", concepto, coste);
+            registrarTransaccion(regFinancieroPath, "GASTO", "RESTOCK_ALMACEN", concepto, coste);
 
         } else {
 
@@ -946,14 +956,16 @@ void pantallaEliminarAlmacen(sqlite3* db, int idAlm) {
     calcularCosteCierreAlmacen(db, idAlm, &coste, &duracion);
 
     printf("  " C_GRIS "Coste estimado de reubicacion: " RESET ESTILO_PRECIO "%.2f €\n" RESET, coste);
-    printf("  " C_GRIS "Tiempo estimado del operativo: " RESET C_BLANCO); imprimirDuracion(duracion); printf("\n" RESET);
+    printf("  " C_GRIS "Tiempo estimado del operativo: " RESET C_BLANCO); imprimirDuracion(duracion); printf(RESET);
 
     if (confirmar("¿Confirmar cierre del almacén?")) {
 
         imprimirInfo("Reubicando stock... esto puede tardar unos segundos.");
         fflush(stdout);
 
-        if (eliminarAlmacen(db, idAlm) == 0) {
+        time_t timestampEjecucion = time(NULL) + duracion;
+
+        if (eliminarAlmacen(db, idAlm, timestampEjecucion) == 0) {
 
             imprimirExito("Almacén cerrado y stock reubicado correctamente.");
             LOG_INFO("Almacén cerrado: #%d — %s, %s || Stock reubicado correctamente || %.2f €", a->id, a->ubicacion.ciudad.nombre, a->ubicacion.ciudad.pais.nombre, coste);
@@ -963,7 +975,7 @@ void pantallaEliminarAlmacen(sqlite3* db, int idAlm) {
 
             char concepto[512];
             snprintf(concepto, sizeof(concepto), "Almacén cerrado: #%d — %s, %s || Stock reubicado correctamente", a->id, a->ubicacion.ciudad.nombre, a->ubicacion.ciudad.pais.nombre);
-            registrarTransaccion(regFinancieroPath, "GASTO", concepto, coste);
+            registrarTransaccion(regFinancieroPath, "GASTO", "CIERRE_ALMACEN", concepto, coste);
 
         } else {
 

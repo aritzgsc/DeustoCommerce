@@ -1,16 +1,15 @@
-#include "ui_admin.h"
-#include "ui_utils.h"
-#include "ui_catalogo.h"
-#include "ui_almacenes.h"
-#include "ui_informes.h"
-#include "productos_db.h"
+#include <admin_ui.h>
+#include <almacenes_ui.h>
+#include <catalogo_db.h>
+#include <catalogo_ui.h>
+#include <informes_ui.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <utils_ui.h>
 
 int salir = 0;
-char* CONFIG_PATH = "../data/config/server_config.ini";
 
 // COMANDOS DEL HOME
 
@@ -112,7 +111,7 @@ void pantallaHome(sqlite3* db) {
 								                                                                                            "║\n"
            "  ║                                                                                                              ║\n"
            "  ╚══════════════════════════════════════════════════════════════════════════════════════════════════════════════╝\n"
-           RESET "\n");
+           RESET);
 
     imprimirEstadoSistema(db);
 

@@ -1,12 +1,12 @@
-#include "ui_admin.h"
-#include "ui_catalogo.h"
-#include "ui_utils.h"
-#include "resenas_db.h"
+#include <admin_ui.h>
+#include <catalogo_ui.h>
+#include "usuario_db.h"
 #include "log.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <utils_ui.h>
 
 // AUXILIARES INTERNAS
 
@@ -54,11 +54,13 @@ static void imprimirPrecio(double precio, double descuento) {
 // Columnas del listado de catálogo
 
 static Columna colsCatalogo[] = {
-    { "  ID  ", 6,  1 },
-    { "               NOMBRE               ", 36, 0 },
-    { "       CATEGORIA       ", 23, 0 },
-    { "  PRECIO (€)  ", 14, 1 },
-    { " STOCK ", 7, 1 },
+
+    { (char*)"  ID  ",                                 6,  1 },
+    { (char*)"                    NOMBRE                    ",  46,  0 },
+    { (char*)"       CATEGORIA       ",               23,  0 },
+    { (char*)"  PRECIO (€)  ",                        14,  1 },
+    { (char*)" STOCK ",                                7,  1 }
+
 };
 
 #define N_COLS_CATALOGO 5
@@ -74,9 +76,9 @@ static void imprimirListadoProductos(sqlite3* db, Producto* prods, int n) {
         Producto* p = &prods[i];
 
         // Truncamos nombre y categoria si es muy largo
-        char nombre[37];
-        strncpy(nombre, p->nombre, 36);
-        nombre[36] = '\0';
+        char nombre[47];
+        strncpy(nombre, p->nombre, 46);
+        nombre[46] = '\0';
 
         char categoria[24];
         strncpy(categoria, p->categoria.nombre, 23);
@@ -88,8 +90,8 @@ static void imprimirListadoProductos(sqlite3* db, Producto* prods, int n) {
 
         // Precio con descuento
 
-        if (p->descuento > 0) snprintf(precioStr, sizeof(precioStr), "%.2f € -%d%%", p->precio * (1.0 - p->descuento), (int)(p->descuento * 100));
-        else snprintf(precioStr, sizeof(precioStr), "%.2f €", p->precio);
+        if (p->descuento > 0) snprintf(precioStr, sizeof(precioStr), "%.2f€ -%d%%", p->precio * (1.0 - p->descuento), (int)(p->descuento * 100));
+        else snprintf(precioStr, sizeof(precioStr), "%.2f€", p->precio);
 
         char* fila[] = { idStr, nombre, categoria, precioStr, stockStr };
 
@@ -103,11 +105,14 @@ static void imprimirListadoProductos(sqlite3* db, Producto* prods, int n) {
 // SELECCIONAR PRODUCTO
 
 static Columna colsSelProd[] = {
-	{ "  ID  ", 6,  1 },
-	{ "               NOMBRE               ", 36, 0 },
-	{ "       CATEGORIA       ", 23, 0 },
-	{ "  PRECIO (€)  ", 14, 1 },
+
+	    { (char*)"  ID  ",                                 6,  1 },
+	    { (char*)"                    NOMBRE                    ",  46,  0 },
+	    { (char*)"            CATEGORIA            ",               33,  0 },
+	    { (char*)"  PRECIO (€)  ",                        14,  1 },
+
 };
+
 #define N_COLS_SEL_PROD 4
 
 static char* cmdsSelProd[] = {
@@ -174,11 +179,11 @@ int seleccionarProducto(sqlite3* db, char* varianteSalida, int maxLen, int idAlm
 
                 Producto* p = &prods[i];
 
-                char idStr[8], precioStr[16], nombre[35], cat[21];
+                char idStr[7], precioStr[15], nombre[47], cat[34];
 
                 snprintf(idStr, sizeof(idStr), "%d", p->id);
-                strncpy(nombre, p->nombre, 34); nombre[34] = '\0';
-                strncpy(cat, p->categoria.nombre, 20); cat[20] = '\0';
+                strncpy(nombre, p->nombre, 46); nombre[46] = '\0';
+                strncpy(cat, p->categoria.nombre, 33); cat[33] = '\0';
 
                 if (p->descuento > 0) snprintf(precioStr, sizeof(precioStr), "%.2f € -%d%%", p->precio * (1.0 - p->descuento), (int)(p->descuento * 100));
                 else snprintf(precioStr, sizeof(precioStr) + 2, "%.2f €", p->precio);
@@ -237,7 +242,7 @@ int seleccionarProducto(sqlite3* db, char* varianteSalida, int maxLen, int idAlm
 
             // Elegimos variante aquí mismo
             if (varianteSalida && maxLen > 0) {
-            	filtrarVariantesConStockEnAlm(db, p, idAlm);
+            	if (idAlm > 0) filtrarVariantesConStockEnAlm(db, p, idAlm);
             	seleccionarVariante(&p->categoria, varianteSalida, maxLen);
             }
 
@@ -319,8 +324,8 @@ int seleccionarProducto(sqlite3* db, char* varianteSalida, int maxLen, int idAlm
 
 static Columna colsCategorias[] = {
 
-    { "  ID  ",         6,  1 },
-    { "               NOMBRE               ",    36,  0 },
+    { (char*)"  ID  ",                                 6,  1 },
+    { (char*)"                  NOMBRE                  ",  42,  2 }
 
 };
 
@@ -372,10 +377,10 @@ int seleccionarCategoria(sqlite3* db) {
         int fin    = inicio + CATS_POR_PAGINA < nFiltradas ? inicio + CATS_POR_PAGINA : nFiltradas;
 
         for (int i = inicio; i < fin; i++) {
-            char idStr[8], nombre[36];
+            char idStr[7], nombre[43];
             snprintf(idStr, sizeof(idStr), "%d", filtradas[i]->id);
-            strncpy(nombre, filtradas[i]->nombre, 35);
-            nombre[35] = '\0';
+            strncpy(nombre, filtradas[i]->nombre, 42);
+            nombre[42] = '\0';
 
             char* fila[] = { idStr, nombre };
             imprimirFilaTabla(fila, colsCategorias, N_COLS_CAT, i % 2);
@@ -510,7 +515,7 @@ static char* cmdsCatalogo[] = {
 void pantallaCatalogo(sqlite3* db) {
 
     int pagina = 1;
-    int total  = 0;
+    int total = 0;
     FiltrosProducto f = filtrosVacios();
 
     while (!salir) {
@@ -526,6 +531,7 @@ void pantallaCatalogo(sqlite3* db) {
 
         if (!prods || total == 0) {
 
+        	printf("\033[A");
             imprimirWarn("No hay productos en el catálogo.");
 
         } else {

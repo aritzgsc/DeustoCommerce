@@ -1,5 +1,5 @@
+#include <admin_ui.h>
 #include "sqlite3.h"
-#include "ui_admin.h"
 #include "log.h"
 #include "config.h"
 #include <stdio.h>

@@ -1,8 +1,8 @@
-#ifndef INCLUDE_UI_CATALOGO_H_
-#define INCLUDE_UI_CATALOGO_H_
+#ifndef INCLUDE_CATALOGO_UI_H_
+#define INCLUDE_CATALOGO_UI_H_
 
+#include <catalogo_db.h>
 #include "sqlite3.h"
-#include "productos_db.h"
 
 // Pantalla principal del catálogo (listado paginado sin filtros)
 void pantallaCatalogo(sqlite3* db);
@@ -30,4 +30,4 @@ void pantallaEditarProducto(sqlite3* db, int idProd);
 // idAlm = -1 -> borra en todos los almacenes, idAlm > 0 -> solo en ese almacén
 void pantallaEliminarProducto(sqlite3* db, int idProd, int idAlm);
 
-#endif /* INCLUDE_UI_CATALOGO_H_ */
+#endif /* INCLUDE_CATALOGO_UI_H_ */

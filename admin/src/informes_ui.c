@@ -1,6 +1,5 @@
-#include "ui_admin.h"
-#include "ui_informes.h"
-#include "ui_utils.h"
+#include <admin_ui.h>
+#include <informes_ui.h>
 #include "informes_db.h"
 #include "finanzas.h"
 #include "config.h"
@@ -9,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <utils_ui.h>
 
 // AUXILIARES INTERNAS
 
@@ -116,6 +116,7 @@ int pantallaBalance(sqlite3* db, char* rutaCsv, char* rutaReports) {
 
     if (!items || n == 0) {
 
+    	printf("\033[A");
         imprimirWarn("No hay registros en el periodo seleccionado.");
         pausar();
         return 0;
@@ -247,6 +248,7 @@ int pantallaDeadStock(sqlite3* db, char* rutaReports) {
 
 		if (!items || n == 0) {
 
+			printf("\033[A");
 			imprimirExito("¡No hay dead stock! Todos los productos tienen ventas registradas.");
 			pausar();
 			return 0;
@@ -388,6 +390,7 @@ int pantallaTopVentas(sqlite3* db, char* rutaReports) {
 
     if (!items || n == 0) {
 
+    	printf("\033[A");
         imprimirWarn("No hay datos de ventas registrados.");
         pausar();
         return 0;
