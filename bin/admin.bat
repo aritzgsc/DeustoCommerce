@@ -1,2 +1,2 @@
 @echo off
-cmd /c ".\admin\admin.exe"
+start "" /max ".\admin\admin.exe"

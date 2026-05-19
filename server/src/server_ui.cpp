@@ -33,6 +33,9 @@ void ejecutarDashboardRealTime(Server& server) {
 
     activarColores();
     string inputBuffer = "";
+
+    Sleep(250);
+
     limpiarPantalla();
 
     while (server.isEnEjecucion()) {

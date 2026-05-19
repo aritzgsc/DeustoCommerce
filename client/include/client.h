@@ -8,7 +8,7 @@
 #include <string>
 #include <iostream>
 
-#define CONFIG_PATH "config/client_config.ini"
+#define CONFIG_PATH "../client/config/client_config.ini"
 
 // Auxiliar
 

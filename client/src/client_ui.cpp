@@ -72,7 +72,7 @@ static void imprimirEstadoCliente(Client& cliente) {
 
         // Estado para invitados
         cout << "  " << C_GRIS << left << setw(24) << "Estado de cuenta:" << RESET  C_AMARILLO << "  Invitado\n" << RESET;
-        cout << "  " << C_GRIS << left << setw(24) << "Aviso:" << RESET C_GRIS << "  Inicia sesión para ver tu carrito y guardar favoritos.\n\n" << RESET;
+        cout << "  " << C_GRIS << left << setw(24) << "Aviso:" << RESET C_GRIS << "  Inicia sesión para ver tu carrito y guardar favoritos.\n" << RESET;
 
     }
 
